@@ -18,7 +18,10 @@ class BookmarkScanner {
 
     @Synchronized
     fun bookmarksIn(file: VirtualFile): List<Bookmark> {
-        if (file.length > MAX_SIZE_BYTES) return emptyList()
+        if (file.length > MAX_SIZE_BYTES) {
+            cache.remove(file.path)
+            return emptyList()
+        }
         val document = FileDocumentManager.getInstance().getCachedDocument(file)
         val stamp = document?.modificationStamp ?: file.modificationStamp
         val fromDocument = document != null
