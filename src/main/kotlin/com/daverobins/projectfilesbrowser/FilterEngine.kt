@@ -15,8 +15,12 @@ class FilterEngine(private val project: Project, private val rootDir: VirtualFil
     private var cachedStamp = NO_FILE_STAMP
     private var cachedGroups: List<FilterGroup> = emptyList()
 
-    fun isFileVisible(relativePath: String, fileName: String): Boolean =
+    /** Group/default visibility only — no project-model gating. Used by the VFS watcher. */
+    fun isGroupVisible(relativePath: String, fileName: String): Boolean =
         visibleByGroups(enabledGroups(), relativePath, fileName)
+
+    fun isFileVisible(relativePath: String, fileName: String): Boolean =
+        isGroupVisible(relativePath, fileName)
 
     fun groupsForUi(): List<Pair<String, Boolean>> {
         val state = MegatronFilterState.getInstance(project)

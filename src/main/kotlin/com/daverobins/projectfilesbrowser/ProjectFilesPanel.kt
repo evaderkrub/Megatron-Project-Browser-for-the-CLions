@@ -67,7 +67,12 @@ class ProjectFilesPanel(
         setToolbar(toolbar.component)
         setContent(ScrollPaneFactory.createScrollPane(tree))
 
-        VfsChangeWatcher(project, rootDir, parentDisposable) {
+        VfsChangeWatcher(
+            project,
+            rootDir,
+            parentDisposable,
+            { relativePath, fileName -> engine.isGroupVisible(relativePath, fileName) },
+        ) {
             structureModel.invalidateAsync()
         }
     }

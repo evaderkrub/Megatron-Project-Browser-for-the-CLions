@@ -3,6 +3,7 @@ package com.daverobins.projectfilesbrowser
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isFilterFileEvent
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantEitherPath
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantPath
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -102,5 +103,21 @@ class VfsChangeWatcherRelevanceTest {
     @Test
     fun filterFileMatchIsCaseInsensitive() {
         assertTrue(isFilterFileEvent(root, null, "/proj/Megatron.Filters"))
+    }
+
+    @Test
+    fun customPredicateMakesGroupOnlyFileRelevant() {
+        val mdVisible: (String, String) -> Boolean = { _, name -> name.endsWith(".md", ignoreCase = true) }
+        assertTrue(isRelevantPath(root, "/proj/docs/notes.md", isDirectory = false, fileVisible = mdVisible))
+        // same file under the built-in default predicate stays irrelevant
+        assertFalse(isRelevantPath(root, "/proj/docs/notes.md", isDirectory = false))
+    }
+
+    @Test
+    fun customPredicateReceivesRelativePathAndName() {
+        val seen = mutableListOf<Pair<String, String>>()
+        val spy: (String, String) -> Boolean = { rel, name -> seen.add(rel to name); true }
+        assertTrue(isRelevantPath(root, "/proj/src/main.cpp", isDirectory = false, fileVisible = spy))
+        assertEquals(listOf("src/main.cpp" to "main.cpp"), seen)
     }
 }

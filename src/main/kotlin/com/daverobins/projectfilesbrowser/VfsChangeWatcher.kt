@@ -24,6 +24,7 @@ class VfsChangeWatcher(
     project: Project,
     rootDir: VirtualFile,
     parentDisposable: Disposable,
+    private val fileVisible: (String, String) -> Boolean,
     onChange: () -> Unit,
 ) {
     private val rootPath = rootDir.path
@@ -48,14 +49,14 @@ class VfsChangeWatcher(
         if (isFilterFileEvent(rootPath, oldPath, event.path)) return true
         return when (event) {
             is VFileContentChangeEvent -> false
-            is VFileCreateEvent -> isRelevantPath(rootPath, event.path, event.isDirectory)
-            is VFileDeleteEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
-            is VFileCopyEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
+            is VFileCreateEvent -> isRelevantPath(rootPath, event.path, event.isDirectory, fileVisible)
+            is VFileDeleteEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory, fileVisible)
+            is VFileCopyEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory, fileVisible)
             is VFileMoveEvent ->
-                isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory)
+                isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory, fileVisible)
             is VFilePropertyChangeEvent ->
                 event.propertyName == VirtualFile.PROP_NAME &&
-                    isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory)
+                    isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory, fileVisible)
             else -> true // unknown event type: rebuild conservatively rather than miss a change
         }
     }
@@ -71,16 +72,25 @@ class VfsChangeWatcher(
                 (oldPath != null && oldPath.equals(filterFilePath, ignoreCase = true))
         }
 
-        fun isRelevantPath(rootPath: String, path: String, isDirectory: Boolean): Boolean {
+        /** Default: the built-in extension filter (used when no engine is in play, e.g. pure tests). */
+        val builtInFileVisible: (String, String) -> Boolean = { _, name -> FileFilter.includeFile(name) }
+
+        fun isRelevantPath(
+            rootPath: String,
+            path: String,
+            isDirectory: Boolean,
+            fileVisible: (String, String) -> Boolean = builtInFileVisible,
+        ): Boolean {
             if (path == rootPath) return true
             val prefix = "$rootPath/"
             if (!path.startsWith(prefix)) return false
-            val segments = path.removePrefix(prefix).split('/')
+            val relative = path.removePrefix(prefix)
+            val segments = relative.split('/')
             for (i in 0 until segments.size - 1) {
                 if (!FileFilter.includeDirectory(segments[i])) return false
             }
             val leaf = segments.last()
-            return if (isDirectory) FileFilter.includeDirectory(leaf) else FileFilter.includeFile(leaf)
+            return if (isDirectory) FileFilter.includeDirectory(leaf) else fileVisible(relative, leaf)
         }
 
         fun isRelevantEitherPath(
@@ -88,8 +98,9 @@ class VfsChangeWatcher(
             oldPath: String?,
             newPath: String,
             isDirectory: Boolean,
+            fileVisible: (String, String) -> Boolean = builtInFileVisible,
         ): Boolean =
-            isRelevantPath(rootPath, newPath, isDirectory) ||
-                (oldPath != null && isRelevantPath(rootPath, oldPath, isDirectory))
+            isRelevantPath(rootPath, newPath, isDirectory, fileVisible) ||
+                (oldPath != null && isRelevantPath(rootPath, oldPath, isDirectory, fileVisible))
     }
 }
