@@ -70,7 +70,7 @@ Expected: Gradle version banner (any 8.x or 9.x version — it only generates th
 
 ### Task 2: Gradle project scaffold
 
-A buildable, empty plugin project: wrapper pinned to 8.13, build files, `plugin.xml` with metadata but no extensions yet (the tool window is registered in Task 5).
+A buildable, empty plugin project: wrapper pinned to 9.6.1, build files, `plugin.xml` with metadata but no extensions yet (the tool window is registered in Task 5).
 
 **Files:**
 - Create: `gradle/wrapper/*`, `gradlew`, `gradlew.bat` (generated)
@@ -83,12 +83,12 @@ A buildable, empty plugin project: wrapper pinned to 8.13, build files, `plugin.
 **Interfaces:**
 - Produces: a project where `.\gradlew.bat build` succeeds; `plugin.xml` that Task 5 adds a `<toolWindow>` extension to; source roots `src/main/kotlin` and `src/test/kotlin` for Tasks 3–5.
 
-- [ ] **Step 1: Generate the Gradle wrapper pinned to 8.13**
+- [ ] **Step 1: Generate the Gradle wrapper pinned to 9.6.1**
 
 Run in the project root (`C:\~prj\Dropbox\vibeProjects\clionprojectview`), BEFORE writing any build files so the installed Gradle doesn't try to evaluate them:
 
 ```powershell
-gradle wrapper --gradle-version 8.13
+gradle wrapper --gradle-version 9.6.1
 ```
 
 Expected: BUILD SUCCESSFUL; `gradlew.bat` and `gradle/wrapper/` now exist.
@@ -128,7 +128,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 plugins {
     id("java")
     kotlin("jvm") version "2.3.0"
-    id("org.jetbrains.intellij.platform") version "2.2.1"
+    id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
 group = "com.daverobins"
@@ -164,7 +164,7 @@ intellijPlatform {
 }
 ```
 
-Troubleshooting (only if the build fails): if plugin version `2.2.1` cannot resolve the CLion 2026.1.1 / build-261 platform, bump `org.jetbrains.intellij.platform` to the latest 2.x listed at https://plugins.gradle.org/plugin/org.jetbrains.intellij.platform — nothing else in this file changes.
+Troubleshooting (only if the build fails): if plugin version `2.18.1` cannot resolve the CLion 2026.1.1 / build-261 platform, bump `org.jetbrains.intellij.platform` to the latest 2.x listed at https://plugins.gradle.org/plugin/org.jetbrains.intellij.platform — nothing else in this file changes.
 
 - [ ] **Step 6: Write `src/main/resources/META-INF/plugin.xml`**
 
@@ -188,7 +188,7 @@ Troubleshooting (only if the build fails): if plugin version `2.2.1` cannot reso
 .\gradlew.bat build --console=plain
 ```
 
-Use a 600000 ms timeout — the first run downloads CLion 2026.1.1 (~1.5 GB) plus Gradle 8.13.
+Use a 600000 ms timeout — the first run downloads CLion 2026.1.1 (~1.5 GB) plus Gradle 9.6.1.
 Expected: `BUILD SUCCESSFUL`.
 
 - [ ] **Step 8: Commit**
@@ -468,7 +468,7 @@ class FileNode(
         presentation.presentableText = file.name
         presentation.setIcon(
             if (file.isDirectory) AllIcons.Nodes.Folder
-            else file.fileType.icon ?: AllIcons.FileTypes.Any
+            else file.fileType.icon ?: AllIcons.FileTypes.Any_type
         )
     }
 
