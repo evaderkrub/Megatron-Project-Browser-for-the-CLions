@@ -4,6 +4,8 @@
 
 A filtered project-files tool window for [CLion](https://www.jetbrains.com/clion/): instead of everything on disk, you see a curated tree — driven by wildcard filter sets, optional virtual folders, and a live quick filter — with build output and VCS noise pruned away.
 
+![Megatron tool window with the quick filter narrowing to *ir*](assets/megatron.png)
+
 ## Install
 
 Grab `clionprojectview-<version>.zip` from the releases (or build it yourself, below), then in CLion:
