@@ -8,6 +8,7 @@
         output and VCS noise pruned away.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.clion</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Megatron"
