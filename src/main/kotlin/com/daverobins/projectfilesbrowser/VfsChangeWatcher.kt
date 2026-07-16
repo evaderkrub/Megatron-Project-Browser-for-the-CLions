@@ -46,7 +46,7 @@ class VfsChangeWatcher(
                 if (event.propertyName == VirtualFile.PROP_NAME) event.oldPath else null
             else -> null
         }
-        if (isFilterFileEvent(rootPath, oldPath, event.path)) return true
+        if (isConfigFileEvent(rootPath, oldPath, event.path)) return true
         return when (event) {
             is VFileContentChangeEvent -> false
             is VFileCreateEvent -> isRelevantPath(rootPath, event.path, event.isDirectory, fileVisible)
@@ -64,13 +64,18 @@ class VfsChangeWatcher(
     companion object {
         const val DEBOUNCE_MS = 500
 
-        /** Events touching <root>/megatron.filters always trigger a refresh —
-         *  including content changes, since the file's content defines the filters. */
-        fun isFilterFileEvent(rootPath: String, oldPath: String?, newPath: String): Boolean {
-            val filterFilePath = "$rootPath/${FilterEngine.FILTER_FILE_NAME}"
-            return newPath.equals(filterFilePath, ignoreCase = true) ||
-                (oldPath != null && oldPath.equals(filterFilePath, ignoreCase = true))
-        }
+        /** Events touching <root>/megatron.filters or <root>/megatron.folders always
+         *  trigger a refresh — including content changes, since those files' content
+         *  defines what the tree shows. */
+        fun isConfigFileEvent(rootPath: String, oldPath: String?, newPath: String): Boolean =
+            CONFIG_FILE_NAMES.any { name ->
+                val configPath = "$rootPath/$name"
+                newPath.equals(configPath, ignoreCase = true) ||
+                    (oldPath != null && oldPath.equals(configPath, ignoreCase = true))
+            }
+
+        private val CONFIG_FILE_NAMES =
+            listOf(FilterEngine.FILTER_FILE_NAME, FolderLayoutStore.FOLDERS_FILE_NAME)
 
         /** Default: the built-in extension filter (used when no engine is in play, e.g. pure tests). */
         val builtInFileVisible: (String, String) -> Boolean = { _, name -> FileFilter.includeFile(name) }

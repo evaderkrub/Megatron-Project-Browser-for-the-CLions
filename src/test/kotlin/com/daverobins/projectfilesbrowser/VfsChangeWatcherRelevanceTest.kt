@@ -1,6 +1,6 @@
 package com.daverobins.projectfilesbrowser
 
-import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isFilterFileEvent
+import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isConfigFileEvent
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantEitherPath
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantPath
 import org.junit.Assert.assertEquals
@@ -84,25 +84,25 @@ class VfsChangeWatcherRelevanceTest {
     }
 
     @Test
-    fun filterFileEventIsAlwaysRelevant() {
-        assertTrue(isFilterFileEvent(root, null, "/proj/megatron.filters"))
+    fun configFileEventIsAlwaysRelevant() {
+        assertTrue(isConfigFileEvent(root, null, "/proj/megatron.filters"))
     }
 
     @Test
-    fun filterFileRenameAwayIsRelevantViaOldPath() {
-        assertTrue(isFilterFileEvent(root, "/proj/megatron.filters", "/proj/renamed.txt"))
+    fun configFileRenameAwayIsRelevantViaOldPath() {
+        assertTrue(isConfigFileEvent(root, "/proj/megatron.filters", "/proj/renamed.txt"))
     }
 
     @Test
-    fun otherFilesAreNotFilterFileEvents() {
-        assertFalse(isFilterFileEvent(root, null, "/proj/main.cpp"))
-        assertFalse(isFilterFileEvent(root, null, "/proj/sub/megatron.filters")) // only root-level file counts
-        assertFalse(isFilterFileEvent(root, null, "/other/megatron.filters"))
+    fun otherFilesAreNotConfigFileEvents() {
+        assertFalse(isConfigFileEvent(root, null, "/proj/main.cpp"))
+        assertFalse(isConfigFileEvent(root, null, "/proj/sub/megatron.filters")) // only root-level file counts
+        assertFalse(isConfigFileEvent(root, null, "/other/megatron.filters"))
     }
 
     @Test
-    fun filterFileMatchIsCaseInsensitive() {
-        assertTrue(isFilterFileEvent(root, null, "/proj/Megatron.Filters"))
+    fun configFileMatchIsCaseInsensitive() {
+        assertTrue(isConfigFileEvent(root, null, "/proj/Megatron.Filters"))
     }
 
     @Test
@@ -119,5 +119,14 @@ class VfsChangeWatcherRelevanceTest {
         val spy: (String, String) -> Boolean = { rel, name -> seen.add(rel to name); true }
         assertTrue(isRelevantPath(root, "/proj/src/main.cpp", isDirectory = false, fileVisible = spy))
         assertEquals(listOf("src/main.cpp" to "main.cpp"), seen)
+    }
+
+    @Test
+    fun testFoldersFileEventsAreAlwaysRelevant() {
+        assertTrue(isConfigFileEvent("/root", null, "/root/megatron.folders"))
+        assertTrue(isConfigFileEvent("/root", null, "/root/MEGATRON.FOLDERS"))
+        assertTrue(isConfigFileEvent("/root", "/root/megatron.folders", "/elsewhere/renamed.txt"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/sub/megatron.folders"))
+        assertFalse(isConfigFileEvent("/root", null, "/other/megatron.folders"))
     }
 }
