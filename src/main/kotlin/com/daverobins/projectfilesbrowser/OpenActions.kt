@@ -58,11 +58,16 @@ private fun sharedLeadingSegments(a: String, b: String): Int {
     return i
 }
 
-/** Resolves the counterpart of [file] among the currently visible project files. */
-internal fun findCounterpartFile(file: VirtualFile, rootDir: VirtualFile, engine: FilterEngine): VirtualFile? {
+/**
+ * Resolves the counterpart of [file] among ALL project files (noise directories
+ * skipped) — deliberately ignoring filter groups and the CMake gate: headers are
+ * often absent from CMake targets or hidden by source-only filters, and "open my
+ * header" should find them anyway.
+ */
+internal fun findCounterpartFile(file: VirtualFile, rootDir: VirtualFile): VirtualFile? {
     val prefix = rootDir.path + "/"
     if (!file.path.startsWith(prefix)) return null
-    val byRelativePath = visibleFilesUnder(rootDir, engine).associateBy { it.path.removePrefix(prefix) }
+    val byRelativePath = allFilesUnder(rootDir).associateBy { it.path.removePrefix(prefix) }
     val match = findCounterpart(file.path.removePrefix(prefix), byRelativePath.keys) ?: return null
     return byRelativePath[match]
 }
@@ -85,15 +90,15 @@ internal fun collectFilesUnder(nodes: List<SimpleNode>): List<VirtualFile> {
     return out.toList()
 }
 
-/** The filtered file walk (same rules as flat mode's collector). */
-internal fun visibleFilesUnder(rootDir: VirtualFile, engine: FilterEngine): List<VirtualFile> {
+/** Every file under the root, skipping excluded (noise) directories — no filter or gate applied. */
+internal fun allFilesUnder(rootDir: VirtualFile): List<VirtualFile> {
     val out = ArrayList<VirtualFile>()
     fun walk(dir: VirtualFile) {
         for (child in dir.children ?: return) {
             if (!child.isValid) continue
             if (child.isDirectory) {
                 if (FileFilter.includeDirectory(child.name)) walk(child)
-            } else if (engine.isFileVisible(child)) {
+            } else {
                 out.add(child)
             }
         }

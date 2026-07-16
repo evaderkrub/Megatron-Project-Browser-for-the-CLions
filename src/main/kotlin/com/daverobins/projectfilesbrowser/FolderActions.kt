@@ -51,7 +51,6 @@ class MegatronTreePopupGroup(
     private val project: Project,
     private val rootDir: VirtualFile,
     private val store: FolderLayoutStore,
-    private val engine: FilterEngine,
     private val tree: Tree,
     private val onChanged: () -> Unit,
 ) : ActionGroup() {
@@ -84,7 +83,7 @@ class MegatronTreePopupGroup(
         }
         val single = singleSelectedFileNode(tree)
         if (single != null && !single.file.isDirectory) {
-            findCounterpartFile(single.file, rootDir, engine)?.let { counterpart ->
+            findCounterpartFile(single.file, rootDir)?.let { counterpart ->
                 extras.add(OpenPairAction(project, single.file, counterpart))
             }
         }

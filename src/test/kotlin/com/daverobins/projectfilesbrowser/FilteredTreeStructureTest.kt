@@ -425,6 +425,19 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         return sb.toString()
     }
 
+    fun testFindCounterpartIgnoresFilterGroups() {
+        myFixture.addFileToProject("cp/megatron/default.filters", "Sources: *.cpp")
+        myFixture.addFileToProject("cp/src/wowz.cpp", "")
+        myFixture.addFileToProject("cp/src/wowz.h", "hidden by the Sources group, must still be found")
+        myFixture.addFileToProject("cp/cmake-build-debug/wowz.h", "noise dir, never searched")
+
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("cp"))
+        val cpp = requireNotNull(rootDir.findFileByRelativePath("src/wowz.cpp"))
+
+        val counterpart = findCounterpartFile(cpp, rootDir)
+        assertEquals("src/wowz.h", counterpart?.path?.removePrefix(rootDir.path + "/"))
+    }
+
     private fun renderNode(node: SimpleNode, indent: String = ""): String {
         node.update()
         val sb = StringBuilder().append(indent).append(node.presentation.presentableText).append('\n')

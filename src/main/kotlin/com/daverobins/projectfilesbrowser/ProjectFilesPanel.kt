@@ -87,7 +87,7 @@ class ProjectFilesPanel(
 
         PopupHandler.installFollowingSelectionTreePopup(
             tree,
-            MegatronTreePopupGroup(project, rootDir, folderStore, engine, tree) { structureModel.invalidateAsync() },
+            MegatronTreePopupGroup(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() },
             "MegatronTreePopup",
         )
 
@@ -147,7 +147,7 @@ class ProjectFilesPanel(
         val node = TreeUtil.getLastUserObject(FileNode::class.java, path) ?: return
         val file = node.file
         if (file.isDirectory || !file.isValid) return
-        val counterpart = findCounterpartFile(file, rootDir, engine)
+        val counterpart = findCounterpartFile(file, rootDir)
         val editors = FileEditorManager.getInstance(project)
         if (counterpart != null && counterpart.isValid) editors.openFile(counterpart, false)
         editors.openFile(file, true)
