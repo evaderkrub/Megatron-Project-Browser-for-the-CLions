@@ -71,7 +71,4 @@ class FilterEngine(
             ""
         }
 
-    companion object {
-        const val FILTER_FILE_NAME = "megatron.filters"
-    }
 }

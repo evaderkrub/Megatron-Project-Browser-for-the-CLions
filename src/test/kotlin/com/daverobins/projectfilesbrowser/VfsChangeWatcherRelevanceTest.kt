@@ -85,24 +85,24 @@ class VfsChangeWatcherRelevanceTest {
 
     @Test
     fun configFileEventIsAlwaysRelevant() {
-        assertTrue(isConfigFileEvent(root, null, "/proj/megatron.filters"))
+        assertTrue(isConfigFileEvent(root, null, "/proj/megatron/default.filters"))
     }
 
     @Test
     fun configFileRenameAwayIsRelevantViaOldPath() {
-        assertTrue(isConfigFileEvent(root, "/proj/megatron.filters", "/proj/renamed.txt"))
+        assertTrue(isConfigFileEvent(root, "/proj/megatron/default.filters", "/proj/renamed.txt"))
     }
 
     @Test
     fun otherFilesAreNotConfigFileEvents() {
         assertFalse(isConfigFileEvent(root, null, "/proj/main.cpp"))
-        assertFalse(isConfigFileEvent(root, null, "/proj/sub/megatron.filters")) // only root-level file counts
-        assertFalse(isConfigFileEvent(root, null, "/other/megatron.filters"))
+        assertFalse(isConfigFileEvent(root, null, "/proj/sub/megatron/default.filters")) // only direct children count
+        assertFalse(isConfigFileEvent(root, null, "/other/megatron/default.filters"))
     }
 
     @Test
     fun configFileMatchIsCaseInsensitive() {
-        assertTrue(isConfigFileEvent(root, null, "/proj/Megatron.Filters"))
+        assertTrue(isConfigFileEvent(root, null, "/proj/megatron/Default.Filters"))
     }
 
     @Test
@@ -123,10 +123,23 @@ class VfsChangeWatcherRelevanceTest {
 
     @Test
     fun testFoldersFileEventsAreAlwaysRelevant() {
-        assertTrue(isConfigFileEvent("/root", null, "/root/megatron.folders"))
-        assertTrue(isConfigFileEvent("/root", null, "/root/MEGATRON.FOLDERS"))
-        assertTrue(isConfigFileEvent("/root", "/root/megatron.folders", "/elsewhere/renamed.txt"))
-        assertFalse(isConfigFileEvent("/root", null, "/root/sub/megatron.folders"))
-        assertFalse(isConfigFileEvent("/root", null, "/other/megatron.folders"))
+        assertTrue(isConfigFileEvent("/root", null, "/root/megatron/default.folders"))
+        assertTrue(isConfigFileEvent("/root", null, "/root/megatron/Default.FOLDERS"))
+        assertTrue(isConfigFileEvent("/root", "/root/megatron/default.folders", "/elsewhere/renamed.txt"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/sub/megatron/default.folders"))
+        assertFalse(isConfigFileEvent("/root", null, "/other/megatron/default.folders"))
+    }
+
+    @Test
+    fun `megatron directory relevance covers dir, both extensions, and rejects the rest`() {
+        assertTrue(isConfigFileEvent("/root", null, "/root/megatron"))
+        assertTrue(isConfigFileEvent("/root", null, "/root/megatron/work.filters"))
+        assertTrue(isConfigFileEvent("/root", null, "/root/MEGATRON/Work.FOLDERS"))
+        assertTrue(isConfigFileEvent("/root", "/root/megatron/a.filters", "/elsewhere/x"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/megatron.filters"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/megatron.folders"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/megatron/sub/a.filters"))
+        assertFalse(isConfigFileEvent("/root", null, "/root/megatron/readme.txt"))
+        assertFalse(isConfigFileEvent("/root", null, "/other/megatron/a.filters"))
     }
 }

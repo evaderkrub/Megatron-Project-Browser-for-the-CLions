@@ -49,7 +49,4 @@ class FolderLayoutStore(
             ""
         }
 
-    companion object {
-        const val FOLDERS_FILE_NAME = "megatron.folders"
-    }
 }

@@ -64,18 +64,25 @@ class VfsChangeWatcher(
     companion object {
         const val DEBOUNCE_MS = 500
 
-        /** Events touching <root>/megatron.filters or <root>/megatron.folders always
-         *  trigger a refresh — including content changes, since those files' content
-         *  defines what the tree shows. */
+        /** Events touching the megatron config directory, or a config file directly
+         *  inside it, always trigger a refresh — including content changes, since
+         *  those files define what the tree shows. */
         fun isConfigFileEvent(rootPath: String, oldPath: String?, newPath: String): Boolean =
-            CONFIG_FILE_NAMES.any { name ->
-                val configPath = "$rootPath/$name"
-                newPath.equals(configPath, ignoreCase = true) ||
-                    (oldPath != null && oldPath.equals(configPath, ignoreCase = true))
-            }
+            isConfigPath(rootPath, newPath) || (oldPath != null && isConfigPath(rootPath, oldPath))
 
-        private val CONFIG_FILE_NAMES =
-            listOf(FilterEngine.FILTER_FILE_NAME, FolderLayoutStore.FOLDERS_FILE_NAME)
+        private fun isConfigPath(rootPath: String, path: String): Boolean {
+            val dir = "$rootPath/${ConfigSetManager.DIR_NAME}"
+            if (path.equals(dir, ignoreCase = true)) return true
+            if (path.length <= dir.length + 1 ||
+                !path.regionMatches(0, dir, 0, dir.length, ignoreCase = true) ||
+                path[dir.length] != '/'
+            ) return false
+            val rest = path.substring(dir.length + 1)
+            if ('/' in rest) return false
+            val lower = rest.lowercase()
+            return lower.endsWith(".${ConfigSetManager.FILTERS_EXT}") ||
+                lower.endsWith(".${ConfigSetManager.FOLDERS_EXT}")
+        }
 
         /** Default: the built-in extension filter (used when no engine is in play, e.g. pure tests). */
         val builtInFileVisible: (String, String) -> Boolean = { _, name -> FileFilter.includeFile(name) }
