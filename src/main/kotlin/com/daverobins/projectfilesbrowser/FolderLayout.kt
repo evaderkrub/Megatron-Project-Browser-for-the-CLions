@@ -95,9 +95,6 @@ class FolderLayout(
         return rules.lastOrNull { !it.isExclusion && it.matches(norm) }?.folder
     }
 
-    /** Lowercase normalized relative paths of every EXPLICITLY assigned file. */
-    fun assignedFilesLowercase(): Set<String> = byFile.keys
-
     /** Original-case paths of files EXPLICITLY assigned to [folder], sorted. */
     fun filesIn(folder: String): List<String> =
         byFile.values.filter { it.folder.equals(folder, ignoreCase = true) }

@@ -68,19 +68,29 @@ class FileNode(
     override fun getEqualityObjects(): Array<Any> =
         if (displayName != null) arrayOf(file, displayName) else arrayOf(file)
 
-    /** Folder view root: the user's virtual folders, then the `<Unassigned>` bucket. */
+    /** Folder view root: resolve rules over the visible-file walk, then group. */
     private fun folderChildren(): Array<SimpleNode> {
         val activeStore = store
         val layout = activeStore?.layout() ?: FolderLayout()
+        val visible = ArrayList<VirtualFile>()
+        collectVisibleFiles(file, visible)
+        val filesByFolder = HashMap<String, MutableList<VirtualFile>>() // folder.lowercase() -> files
+        val assigned = HashSet<String>() // lowercase relative paths
+        for (candidate in visible) {
+            val rel = relativePath(candidate)
+            val folder = layout.folderFor(rel) ?: continue
+            filesByFolder.getOrPut(folder.lowercase()) { ArrayList() }.add(candidate)
+            assigned.add(rel.lowercase())
+        }
         val folderNodes: List<SimpleNode> =
             if (activeStore == null) emptyList()
             else layout.childFolders("").map {
-                VirtualFolderNode(project, this, it, activeStore, engine, file, rootPath)
+                VirtualFolderNode(project, this, it, layout, filesByFolder, engine, rootPath)
             }
         val unassigned = FileNode(
             project, this, file, engine, rootPath,
             displayName = UNASSIGNED_LABEL,
-            excludedFiles = layout.assignedFilesLowercase(),
+            excludedFiles = assigned,
         )
         return (folderNodes + unassigned).toTypedArray()
     }

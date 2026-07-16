@@ -303,6 +303,90 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         }
     }
 
+    fun testFolderViewPatternsAssignFilesAndShrinkUnassigned() {
+        myFixture.addFileToProject("pw/megatron.folders", "Engine/\n  src/**\n")
+        myFixture.addFileToProject("pw/src/a.cpp", "")
+        myFixture.addFileToProject("pw/src/deep/b.h", "")
+        myFixture.addFileToProject("pw/main.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("pw"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                pw
+                  Engine
+                    a.cpp
+                    b.h
+                  <Unassigned>
+                    main.cpp
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewExclusionReturnsFileToUnassigned() {
+        myFixture.addFileToProject("px/megatron.folders", "Engine/\n  src/**\n  !src/gen.cpp\n")
+        myFixture.addFileToProject("px/src/a.cpp", "")
+        myFixture.addFileToProject("px/src/gen.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("px"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                px
+                  Engine
+                    a.cpp
+                  <Unassigned>
+                    src
+                      gen.cpp
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewEngineFiltersApplyToPatternMatches() {
+        myFixture.addFileToProject("pf/megatron.filters", "Sources: *.cpp")
+        myFixture.addFileToProject("pf/megatron.folders", "All/\n  **\n")
+        myFixture.addFileToProject("pf/a.cpp", "")
+        myFixture.addFileToProject("pf/notes.md", "hidden by Sources group")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("pf"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                pf
+                  All
+                    a.cpp
+                  <Unassigned>
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
     private fun render(node: FileNode, indent: String = ""): String {
         val sb = StringBuilder().append(indent).append(node.file.name).append('\n')
         for (child in node.children) {

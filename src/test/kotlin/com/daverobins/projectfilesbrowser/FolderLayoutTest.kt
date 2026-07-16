@@ -45,7 +45,7 @@ class FolderLayoutTest {
     fun `backslashes normalize and lookups are case-insensitive`() {
         val layout = parseFoldersFile("Core/\n  src\\Engine.CPP\n")
         assertEquals("Core", layout.folderFor("SRC/engine.cpp"))
-        assertTrue("src/engine.cpp" in layout.assignedFilesLowercase())
+        assertEquals("Core", layout.folderFor("src\\engine.cpp"))
     }
 
     @Test

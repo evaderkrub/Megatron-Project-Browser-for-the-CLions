@@ -6,25 +6,25 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.treeStructure.SimpleNode
 
-/** A user-defined virtual folder in folder view; children are subfolders plus assigned files. */
+/**
+ * A user-defined virtual folder in folder view. Children are subfolders plus the
+ * files that resolved to this folder during the root's visible-file walk.
+ */
 class VirtualFolderNode(
     private val project: Project,
     parent: SimpleNode,
     val folderPath: String,
-    private val store: FolderLayoutStore,
+    private val layout: FolderLayout,
+    private val filesByFolder: Map<String, List<VirtualFile>>,
     private val engine: FilterEngine,
-    private val rootDir: VirtualFile,
     private val rootPath: String,
 ) : SimpleNode(project, parent) {
 
     override fun getChildren(): Array<SimpleNode> {
-        val layout = store.layout()
         val subFolders: List<SimpleNode> = layout.childFolders(folderPath).map {
-            VirtualFolderNode(project, this, it, store, engine, rootDir, rootPath)
+            VirtualFolderNode(project, this, it, layout, filesByFolder, engine, rootPath)
         }
-        val files: List<SimpleNode> = layout.filesIn(folderPath)
-            .mapNotNull { resolveRelativePath(rootDir, it) }
-            .filter { it.isValid && !it.isDirectory && engine.isFileVisible(it) }
+        val files: List<SimpleNode> = (filesByFolder[folderPath.lowercase()] ?: emptyList())
             .sortedWith(compareBy({ it.name.lowercase() }, { it.path.lowercase() }))
             .map { FileNode(project, this, it, engine, rootPath, flatLeaf = true) }
         return (subFolders + files).toTypedArray()
@@ -39,17 +39,5 @@ class VirtualFolderNode(
 
     companion object {
         private const val EQUALITY_KEY = "megatron.virtualFolder"
-
-        /** [VirtualFile.findFileByRelativePath] with a case-insensitive fallback per segment. */
-        fun resolveRelativePath(root: VirtualFile, relativePath: String): VirtualFile? {
-            root.findFileByRelativePath(relativePath)?.let { return it }
-            var current: VirtualFile = root
-            for (segment in relativePath.split('/')) {
-                if (segment.isEmpty()) continue
-                current = current.children?.firstOrNull { it.name.equals(segment, ignoreCase = true) }
-                    ?: return null
-            }
-            return current
-        }
     }
 }
