@@ -23,7 +23,7 @@ import javax.swing.KeyStroke
 
 class ProjectFilesPanel(
     private val project: Project,
-    rootDir: VirtualFile,
+    private val rootDir: VirtualFile,
     parentDisposable: Disposable,
 ) : SimpleToolWindowPanel(true, true) {
 
@@ -50,7 +50,7 @@ class ProjectFilesPanel(
 
         val refresh = object : AnAction("Refresh", "Rebuild the file tree", AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
-                structureModel.invalidateAsync()
+                rootDir.refresh(true, true) { structureModel.invalidateAsync() }
             }
         }
         val toolbar = ActionManager.getInstance()
