@@ -126,10 +126,9 @@ internal class OpenFolderInTabsAction(
             if (answer != Messages.YES) return
         }
         val editors = FileEditorManager.getInstance(project)
-        val window = (editors as? FileEditorManagerEx)?.currentWindow
         for (file in files) {
             editors.openFile(file, false)
-            if (pinned) window?.setFilePinned(file, true)
+            if (pinned) (editors as? FileEditorManagerEx)?.currentWindow?.setFilePinned(file, true)
         }
     }
 }
