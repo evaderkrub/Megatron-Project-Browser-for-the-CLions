@@ -38,4 +38,28 @@ class MegatronFilterStateTest {
         assertFalse(state.isEnabled("X"))
         assertTrue(state.isEnabled("Y"))
     }
+
+    @Test
+    fun flatModeDefaultsToFalse() {
+        assertFalse(MegatronFilterState().isFlatMode())
+    }
+
+    @Test
+    fun flatModeRoundTrips() {
+        val state = MegatronFilterState()
+        state.setFlatMode(true)
+        assertTrue(state.isFlatMode())
+        state.setFlatMode(false)
+        assertFalse(state.isFlatMode())
+    }
+
+    @Test
+    fun getStateCopiesFlatMode() {
+        val state = MegatronFilterState()
+        state.setFlatMode(true)
+        val snapshot = state.state
+        assertTrue(snapshot.flatMode)
+        state.setFlatMode(false)
+        assertTrue(snapshot.flatMode) // snapshot is a copy, unaffected by later changes
+    }
 }

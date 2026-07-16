@@ -19,6 +19,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
 
     class State {
         var disabledGroups: MutableSet<String> = mutableSetOf()
+        var flatMode: Boolean = false
     }
 
     @Volatile
@@ -26,7 +27,10 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
 
     @Synchronized
     override fun getState(): State =
-        State().apply { disabledGroups = current.disabledGroups.toMutableSet() }
+        State().apply {
+            disabledGroups = current.disabledGroups.toMutableSet()
+            flatMode = current.flatMode
+        }
 
     @Synchronized
     override fun loadState(state: State) {
@@ -39,6 +43,14 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     @Synchronized
     fun setEnabled(name: String, enabled: Boolean) {
         if (enabled) current.disabledGroups.remove(name) else current.disabledGroups.add(name)
+    }
+
+    @Synchronized
+    fun isFlatMode(): Boolean = current.flatMode
+
+    @Synchronized
+    fun setFlatMode(flat: Boolean) {
+        current.flatMode = flat
     }
 
     companion object {
