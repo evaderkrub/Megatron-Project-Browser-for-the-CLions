@@ -85,8 +85,9 @@ edits, so folder contents track the file system with no new listeners.
 ## Components
 
 - **`FolderLayout`** (modified, still pure): entries become typed —
-  `ExplicitEntry(path, folder)`, `PatternEntry(glob, folder, position)`,
-  `ExclusionEntry(matcher)` — reusing the existing `GlobPattern` from
+  explicit assignments stay `FileAssignment(path, folder)`; patterns and
+  exclusions are `FolderRule(raw, folder, isExclusion)` — reusing the
+  existing `GlobPattern` from
   FilterConfig.kt. `folderFor(relativePath)` implements the precedence
   chain; `patternFolderFor(relativePath)` exposes rules-only resolution.
   Mutations carry the exclusion semantics internally: `withAssignment`
