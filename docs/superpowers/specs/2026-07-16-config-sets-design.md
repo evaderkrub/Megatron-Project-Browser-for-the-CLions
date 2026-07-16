@@ -62,6 +62,16 @@ creates a documented default set.
   one folder per file; UI edits rewrite the file), followed by no folders —
   an empty documented file.
 
+## Header comments survive UI rewrites
+
+So the default set's documentation isn't destroyed by the first drag-and-drop:
+`FolderLayout` now captures the file's HEADER — the leading run of comment
+(`#`) and blank lines before the first folder/rule line (right-trimmed,
+trailing blank lines dropped) — and the serializer re-emits it (followed by
+one blank line when folders follow). Mutations carry the header through.
+Comments elsewhere in the file are still not preserved (unchanged).
+`.filters` files are never rewritten by the UI, so they need nothing.
+
 ## Plumbing
 
 - **`ConfigSetManager`** (new): owns set scanning and resolution for one
