@@ -1,11 +1,10 @@
 <idea-plugin>
     <id>com.daverobins.projectfilesbrowser</id>
-    <name>Megatron</name>
+    <name>Megatron Project Browser</name>
     <vendor email="daverobins@intrepidcs.com">Dave Robins</vendor>
     <description><![CDATA[
-        A filtered project files browser for CLion. Shows a curated tree of the
-        files that matter (C/C++ sources, headers, CMake files) with build
-        output and VCS noise pruned away.
+        Written in Detroit, this project browser for the CLions. Not as amazing
+        as the player Calvin but it aspires to be.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.clion</depends>
