@@ -19,6 +19,7 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
+import javax.swing.DropMode
 import javax.swing.JComponent
 import javax.swing.KeyStroke
 
@@ -76,6 +77,11 @@ class ProjectFilesPanel(
             MegatronTreePopupGroup(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() },
             "MegatronTreePopup",
         )
+
+        tree.dragEnabled = true
+        tree.dropMode = DropMode.ON
+        tree.transferHandler =
+            MegatronTreeTransferHandler(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() }
 
         VfsChangeWatcher(
             project,
