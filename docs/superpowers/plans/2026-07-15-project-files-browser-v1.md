@@ -6,7 +6,7 @@
 
 **Architecture:** Custom tool window built on the modern IntelliJ Platform tree stack: `SimpleTreeStructure` (subclass of `AbstractTreeStructure`) → `StructureTreeModel` → `AsyncTreeModel` → `Tree`. Filtering logic lives in a pure-Kotlin `FileFilter` object; the tree structure walks the VFS through it. Scanning happens on background threads courtesy of the tree models.
 
-**Tech Stack:** Kotlin 2.3.0, Gradle 8.13 (wrapper), IntelliJ Platform Gradle Plugin 2.2.1, JDK 21 (Temurin), target CLion 2026.1.1. (Plan originally pinned Kotlin 2.1.0; CLion 2026.1.1 platform jars carry Kotlin 2.3.0 metadata, which a 2.1.0 compiler cannot read — verified by compile failure on 2026-07-15. 2.3.0 is forced.)
+**Tech Stack:** Kotlin 2.3.0, Gradle 9.6.1 (wrapper), IntelliJ Platform Gradle Plugin 2.18.1, JDK 21 (Temurin), target CLion 2026.1.1. (Plan originally pinned Gradle 8.13 + IJPGP 2.2.1; IJPGP 2.2.1 predates the 2026.1 split-mode dist layout and its `runIde` fails with "Could not find or load main class com.intellij.idea.Main" — fixed by IJPGP 2.18.1, which in turn requires Gradle 9. Verified 2026-07-15.) (Plan originally pinned Kotlin 2.1.0; CLion 2026.1.1 platform jars carry Kotlin 2.3.0 metadata, which a 2.1.0 compiler cannot read — verified by compile failure on 2026-07-15. 2.3.0 is forced.)
 
 ## Global Constraints
 
