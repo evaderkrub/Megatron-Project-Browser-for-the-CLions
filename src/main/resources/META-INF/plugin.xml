@@ -15,5 +15,6 @@
                     anchor="left"
                     icon="AllIcons.Toolwindows.ToolWindowProject"
                     factoryClass="com.daverobins.projectfilesbrowser.ProjectFilesToolWindowFactory"/>
+        <notificationGroup id="Megatron" displayType="BALLOON"/>
     </extensions>
 </idea-plugin>
