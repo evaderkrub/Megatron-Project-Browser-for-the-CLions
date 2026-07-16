@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
@@ -69,6 +70,12 @@ class ProjectFilesPanel(
         toolbar.targetComponent = tree
         setToolbar(toolbar.component)
         setContent(ScrollPaneFactory.createScrollPane(tree))
+
+        PopupHandler.installFollowingSelectionTreePopup(
+            tree,
+            MegatronTreePopupGroup(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() },
+            "MegatronTreePopup",
+        )
 
         VfsChangeWatcher(
             project,
