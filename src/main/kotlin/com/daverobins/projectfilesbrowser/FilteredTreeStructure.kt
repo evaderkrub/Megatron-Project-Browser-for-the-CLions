@@ -23,10 +23,16 @@ class FileNode(
     val file: VirtualFile,
     private val engine: FilterEngine,
     private val rootPath: String,
+    private val flatLeaf: Boolean = false,
 ) : SimpleNode(project, parent) {
+
+    private val isRootNode = parent == null
 
     override fun getChildren(): Array<SimpleNode> {
         if (!file.isDirectory) return NO_CHILDREN
+        if (isRootNode && MegatronFilterState.getInstance(project).isFlatMode()) {
+            return flatChildren()
+        }
         val visible = (file.children ?: return NO_CHILDREN)
             .filter { it.isValid && isVisible(it) }
             .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
@@ -36,6 +42,10 @@ class FileNode(
 
     override fun update(presentation: PresentationData) {
         presentation.presentableText = file.name
+        if (flatLeaf) {
+            val parentRel = relativePath(file).substringBeforeLast('/', "")
+            if (parentRel.isNotEmpty()) presentation.locationString = parentRel
+        }
         presentation.setIcon(
             if (file.isDirectory) AllIcons.Nodes.Folder
             else file.fileType.icon ?: AllIcons.FileTypes.Any_type
@@ -43,6 +53,25 @@ class FileNode(
     }
 
     override fun getEqualityObjects(): Array<Any> = arrayOf(file)
+
+    private fun flatChildren(): Array<SimpleNode> {
+        val files = ArrayList<VirtualFile>()
+        collectVisibleFiles(file, files)
+        files.sortWith(compareBy({ it.name.lowercase() }, { relativePath(it).lowercase() }))
+        return files.map { FileNode(project, this, it, engine, rootPath, flatLeaf = true) }.toTypedArray()
+    }
+
+    /** Depth-first collection of visible files; excluded directories are not entered at all. */
+    private fun collectVisibleFiles(dir: VirtualFile, out: MutableList<VirtualFile>) {
+        for (child in dir.children ?: return) {
+            if (!child.isValid) continue
+            if (child.isDirectory) {
+                if (FileFilter.includeDirectory(child.name)) collectVisibleFiles(child, out)
+            } else if (engine.isFileVisible(relativePath(child), child.name)) {
+                out.add(child)
+            }
+        }
+    }
 
     private fun isVisible(candidate: VirtualFile): Boolean =
         if (candidate.isDirectory) {

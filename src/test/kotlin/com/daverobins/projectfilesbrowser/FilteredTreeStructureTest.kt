@@ -68,6 +68,84 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         )
     }
 
+    fun testFlatModeListsVisibleFilesSortedByNameThenPath() {
+        myFixture.addFileToProject("fl/CMakeLists.txt", "")
+        myFixture.addFileToProject("fl/src/alpha.cpp", "")
+        myFixture.addFileToProject("fl/src/deep/beta.h", "")
+        myFixture.addFileToProject("fl/zeta.cpp", "")
+        myFixture.addFileToProject("fl/readme.md", "hidden by built-in defaults")
+        myFixture.addFileToProject("fl/cmake-build-debug/x.cpp", "excluded dir, never traversed")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setFlatMode(true)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("fl"))
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
+            val root = structure.rootElement as FileNode
+
+            assertEquals(
+                listOf("alpha.cpp", "beta.h", "CMakeLists.txt", "zeta.cpp"),
+                root.children.map { (it as FileNode).file.name },
+            )
+            assertTrue("flat rows must be leaves", root.children.all { it.children.isEmpty() })
+        } finally {
+            state.setFlatMode(false)
+        }
+    }
+
+    fun testFlatLeafLocationStrings() {
+        myFixture.addFileToProject("loc/src/main.cpp", "")
+        myFixture.addFileToProject("loc/top.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setFlatMode(true)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("loc"))
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
+            val root = structure.rootElement as FileNode
+            val nodes = root.children.map { it as FileNode }
+
+            val main = nodes.first { it.file.name == "main.cpp" }
+            main.update()
+            assertEquals("src", main.presentation.locationString)
+
+            val top = nodes.first { it.file.name == "top.cpp" }
+            top.update()
+            assertNull(top.presentation.locationString)
+        } finally {
+            state.setFlatMode(false)
+        }
+    }
+
+    fun testFlatAndTreeShowTheSameFileSet() {
+        myFixture.addFileToProject("par/megatron.filters", "Docs: *.md\nSrc: src/**")
+        myFixture.addFileToProject("par/readme.md", "")
+        myFixture.addFileToProject("par/src/a.cpp", "")
+        myFixture.addFileToProject("par/hidden.cpp", "matches no group -> hidden in BOTH modes")
+
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("par"))
+        val state = MegatronFilterState.getInstance(project)
+
+        fun collectFiles(node: FileNode): Set<String> =
+            if (node.file.isDirectory) node.children.flatMap { collectFiles(it as FileNode) }.toSet()
+            else setOf(node.file.path)
+
+        state.setFlatMode(false)
+        val treeSet = collectFiles(
+            FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir)).rootElement as FileNode
+        )
+        state.setFlatMode(true)
+        try {
+            val flatSet = collectFiles(
+                FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir)).rootElement as FileNode
+            )
+            assertEquals(treeSet, flatSet)
+            assertEquals(2, flatSet.size)
+        } finally {
+            state.setFlatMode(false)
+        }
+    }
+
     private fun render(node: FileNode, indent: String = ""): String {
         val sb = StringBuilder().append(indent).append(node.file.name).append('\n')
         for (child in node.children) {
