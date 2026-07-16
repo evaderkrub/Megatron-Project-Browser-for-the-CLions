@@ -34,7 +34,7 @@ so files visible only via custom groups trigger refreshes too.
 
 ## Behavior
 
-- **Dropdown entry**: checkbox row `Only CMake project files` pinned FIRST in the
+- **Dropdown entry**: checkbox row `Only CMake Project Files` pinned FIRST in the
   filter dropdown, followed by a separator, then the group toggles (or the
   no-file info entry). Present regardless of whether a model exists.
 - **Gate semantics** (only when the toggle is ON):
@@ -106,7 +106,7 @@ predicate as a parameter.
 - State round-trip tests for `cmakeGateEnabled`.
 - Watcher: relevance-with-predicate tests — a `*.md` file is relevant when the
   predicate says visible (group case) and irrelevant under defaults; existing
-  tests updated to pass the default predicate.
+  tests unchanged (the predicate parameter is defaulted).
 - The real `OcWorkspaceGate` is compile-verified; behavior verified in the sandbox
   checklist: on a real CMake project, toggle ON hides out-of-model files (e.g. a
   stray `.cpp` not added to any target, build scripts); open the project fresh and
