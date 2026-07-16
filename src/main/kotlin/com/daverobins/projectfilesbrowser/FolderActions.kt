@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.treeStructure.SimpleNode
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
 
@@ -28,6 +29,20 @@ internal fun selectedVirtualFolder(tree: Tree): String? {
     return TreeUtil.getLastUserObject(VirtualFolderNode::class.java, paths[0])?.folderPath
 }
 
+/** Selected folder-like nodes: virtual folders, disk directories, and the <Unassigned> bucket. */
+internal fun selectedFolderLikeNodes(tree: Tree): List<SimpleNode> =
+    (tree.selectionPaths ?: return emptyList()).mapNotNull { path ->
+        TreeUtil.getLastUserObject(VirtualFolderNode::class.java, path)
+            ?: TreeUtil.getLastUserObject(FileNode::class.java, path)?.takeIf { it.file.isDirectory }
+    }
+
+/** The single selected FileNode (file or directory), or null. */
+internal fun singleSelectedFileNode(tree: Tree): FileNode? {
+    val paths = tree.selectionPaths ?: return null
+    if (paths.size != 1) return null
+    return TreeUtil.getLastUserObject(FileNode::class.java, paths[0])
+}
+
 /**
  * Right-click menu for the Megatron tree. File assignment works in every view
  * mode; folder management appears only in folder view (folder nodes only exist there).
@@ -36,6 +51,7 @@ class MegatronTreePopupGroup(
     private val project: Project,
     private val rootDir: VirtualFile,
     private val store: FolderLayoutStore,
+    private val engine: FilterEngine,
     private val tree: Tree,
     private val onChanged: () -> Unit,
 ) : ActionGroup() {
@@ -59,6 +75,25 @@ class MegatronTreePopupGroup(
                 actions.add(RenameFolderAction(folder))
                 actions.add(DeleteFolderAction(folder))
             }
+        }
+        val extras = ArrayList<AnAction>()
+        val folderLike = selectedFolderLikeNodes(tree)
+        if (folderLike.isNotEmpty()) {
+            extras.add(OpenFolderInTabsAction(project, folderLike, pinned = false))
+            extras.add(OpenFolderInTabsAction(project, folderLike, pinned = true))
+        }
+        val single = singleSelectedFileNode(tree)
+        if (single != null && !single.file.isDirectory) {
+            findCounterpartFile(single.file, rootDir, engine)?.let { counterpart ->
+                extras.add(OpenPairAction(project, single.file, counterpart))
+            }
+        }
+        if (single != null && !single.isUnassignedBucket) {
+            extras.add(RevealInFileManagerAction(single.file))
+        }
+        if (extras.isNotEmpty()) {
+            if (actions.isNotEmpty()) actions.add(Separator.getInstance())
+            actions.addAll(extras)
         }
         return actions.toTypedArray()
     }

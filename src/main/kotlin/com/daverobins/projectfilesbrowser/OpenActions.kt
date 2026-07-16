@@ -1,7 +1,16 @@
 package com.daverobins.projectfilesbrowser
 
+import com.intellij.ide.actions.RevealFileAction
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.treeStructure.SimpleNode
+import java.io.File
 
 internal const val OPEN_TABS_CONFIRM_THRESHOLD = 20
 
@@ -91,4 +100,65 @@ internal fun visibleFilesUnder(rootDir: VirtualFile, engine: FilterEngine): List
     }
     walk(rootDir)
     return out
+}
+
+/** Opens every file the tree shows under the given folder-like nodes, optionally pinning each tab. */
+internal class OpenFolderInTabsAction(
+    private val project: Project,
+    private val nodes: List<SimpleNode>,
+    private val pinned: Boolean,
+) : AnAction(if (pinned) "Open in Pinned Tabs" else "Open in Tabs") {
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val files = collectFilesUnder(nodes).filter { it.isValid }
+        if (files.isEmpty()) return
+        if (files.size > OPEN_TABS_CONFIRM_THRESHOLD) {
+            val answer = Messages.showYesNoDialog(
+                project,
+                "Open ${files.size} editor tabs?",
+                "Open in Tabs",
+                "Open",
+                "Cancel",
+                null,
+            )
+            if (answer != Messages.YES) return
+        }
+        val editors = FileEditorManager.getInstance(project)
+        val window = (editors as? FileEditorManagerEx)?.currentWindow
+        for (file in files) {
+            editors.openFile(file, false)
+            if (pinned) window?.setFilePinned(file, true)
+        }
+    }
+}
+
+/** Opens the selected file and its header/source counterpart; focus lands on the selected file. */
+internal class OpenPairAction(
+    private val project: Project,
+    private val file: VirtualFile,
+    private val counterpart: VirtualFile,
+) : AnAction("Open Pair") {
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val editors = FileEditorManager.getInstance(project)
+        if (counterpart.isValid) editors.openFile(counterpart, false)
+        if (file.isValid) editors.openFile(file, true)
+    }
+}
+
+/** Reveals the file or directory in the OS file manager (platform-appropriate name). */
+internal class RevealInFileManagerAction(
+    private val file: VirtualFile,
+) : AnAction(RevealFileAction.getActionName()) {
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val ioFile = File(file.path)
+        if (ioFile.isDirectory) RevealFileAction.openDirectory(ioFile) else RevealFileAction.openFile(ioFile)
+    }
 }

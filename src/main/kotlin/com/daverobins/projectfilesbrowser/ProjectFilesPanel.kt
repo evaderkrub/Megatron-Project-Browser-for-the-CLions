@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -50,7 +51,7 @@ class ProjectFilesPanel(
 
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
-                openSelection()
+                if (event.isControlDown) openPairOrSelection() else openSelection()
                 return true
             }
         }.installOn(tree)
@@ -86,7 +87,7 @@ class ProjectFilesPanel(
 
         PopupHandler.installFollowingSelectionTreePopup(
             tree,
-            MegatronTreePopupGroup(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() },
+            MegatronTreePopupGroup(project, rootDir, folderStore, engine, tree) { structureModel.invalidateAsync() },
             "MegatronTreePopup",
         )
 
@@ -138,5 +139,17 @@ class ProjectFilesPanel(
         if (!file.isDirectory && file.isValid) {
             OpenFileDescriptor(project, file).navigate(true)
         }
+    }
+
+    /** Ctrl+double-click: open the header/source pair when one exists, else plain open. */
+    private fun openPairOrSelection() {
+        val path = tree.selectionPath ?: return
+        val node = TreeUtil.getLastUserObject(FileNode::class.java, path) ?: return
+        val file = node.file
+        if (file.isDirectory || !file.isValid) return
+        val counterpart = findCounterpartFile(file, rootDir, engine)
+        val editors = FileEditorManager.getInstance(project)
+        if (counterpart != null && counterpart.isValid) editors.openFile(counterpart, false)
+        editors.openFile(file, true)
     }
 }
