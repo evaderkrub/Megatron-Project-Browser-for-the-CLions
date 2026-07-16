@@ -128,7 +128,11 @@ internal class OpenFolderInTabsAction(
         val editors = FileEditorManager.getInstance(project)
         for (file in files) {
             editors.openFile(file, false)
-            if (pinned) (editors as? FileEditorManagerEx)?.currentWindow?.setFilePinned(file, true)
+            if (pinned) {
+                (editors as? FileEditorManagerEx)?.currentWindow
+                    ?.takeIf { it.isFileOpen(file) }
+                    ?.setFilePinned(file, true)
+            }
         }
     }
 }

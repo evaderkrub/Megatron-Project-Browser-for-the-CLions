@@ -51,7 +51,7 @@ class ProjectFilesPanel(
 
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
-                if (event.isControlDown) openPairOrSelection() else openSelection()
+                if (event.isControlDown) openPairOrSelection(event) else openSelection()
                 return true
             }
         }.installOn(tree)
@@ -142,8 +142,8 @@ class ProjectFilesPanel(
     }
 
     /** Ctrl+double-click: open the header/source pair when one exists, else plain open. */
-    private fun openPairOrSelection() {
-        val path = tree.selectionPath ?: return
+    private fun openPairOrSelection(event: MouseEvent) {
+        val path = tree.getPathForLocation(event.x, event.y) ?: return
         val node = TreeUtil.getLastUserObject(FileNode::class.java, path) ?: return
         val file = node.file
         if (file.isDirectory || !file.isValid) return
