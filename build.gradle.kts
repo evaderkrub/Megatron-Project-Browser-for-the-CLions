@@ -29,6 +29,12 @@ kotlin {
     jvmToolchain(21)
 }
 
+tasks.test {
+    // Light platform tests don't need bundled plugins; loading them triggers unrelated
+    // teardown errors (VueLspServerLoader, RdDispatcher) in the CLion 2026.1.1 sandbox.
+    systemProperty("idea.load.plugins", "false")
+}
+
 intellijPlatform {
     buildSearchableOptions = false
     pluginConfiguration {
