@@ -20,7 +20,7 @@ class FolderLayoutStoreTest : BasePlatformTestCase() {
 
         store.mutate { it.withFolder("Core").withAssignment("src/a.cpp", "Core") }
 
-        val file = requireNotNull(rootDir.findChild(FolderLayoutStore.FOLDERS_FILE_NAME))
+        val file = requireNotNull(rootDir.findFileByRelativePath("megatron/default.folders"))
         assertEquals("Core/\n  src/a.cpp\n", String(file.contentsToByteArray(), file.charset))
 
         store.mutate { it.withAssignment("src/a.cpp", "Core/Sub") }
@@ -31,12 +31,12 @@ class FolderLayoutStoreTest : BasePlatformTestCase() {
     }
 
     fun testLayoutReloadsAfterExternalEdit() {
-        myFixture.addFileToProject("s3/megatron.folders", "Core/\n  a.cpp\n")
+        myFixture.addFileToProject("s3/megatron/default.folders", "Core/\n  a.cpp\n")
         val rootDir = requireNotNull(myFixture.findFileInTempDir("s3"))
         val store = FolderLayoutStore(project, rootDir)
         assertEquals("Core", store.layout().folderFor("a.cpp"))
 
-        val file = requireNotNull(rootDir.findChild(FolderLayoutStore.FOLDERS_FILE_NAME))
+        val file = requireNotNull(rootDir.findFileByRelativePath("megatron/default.folders"))
         WriteAction.runAndWait<RuntimeException> {
             VfsUtil.saveText(file, "Base/\n  a.cpp\n")
         }

@@ -46,7 +46,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFilterGroupsFromProjectFileDriveVisibility() {
-        myFixture.addFileToProject("gp/megatron.filters", "Docs: *.md\nSources: src/**")
+        myFixture.addFileToProject("gp/megatron/default.filters", "Docs: *.md\nSources: src/**")
         myFixture.addFileToProject("gp/readme.md", "shown by Docs")
         myFixture.addFileToProject("gp/src/main.cpp", "shown by Sources")
         myFixture.addFileToProject("gp/src/notes.txt", "shown by Sources (src/** matches everything under src)")
@@ -131,7 +131,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFlatAndTreeShowTheSameFileSet() {
-        myFixture.addFileToProject("par/megatron.filters", "Docs: *.md\nSrc: src/**")
+        myFixture.addFileToProject("par/megatron/default.filters", "Docs: *.md\nSrc: src/**")
         myFixture.addFileToProject("par/readme.md", "")
         myFixture.addFileToProject("par/src/a.cpp", "")
         myFixture.addFileToProject("par/hidden.cpp", "matches no group -> hidden in BOTH modes")
@@ -161,7 +161,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
 
     fun testFolderViewShowsFoldersThenUnassigned() {
         myFixture.addFileToProject(
-            "fv/megatron.folders",
+            "fv/megatron/default.folders",
             "Platform/\n  win.cpp\nCore/\n  src/engine.cpp\n  src/engine.h\nEmpty/\n",
         )
         myFixture.addFileToProject("fv/src/engine.cpp", "")
@@ -199,7 +199,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewNestsSubfolders() {
-        myFixture.addFileToProject("fn/megatron.folders", "Core/\nCore/Math/\n  v.h\n")
+        myFixture.addFileToProject("fn/megatron/default.folders", "Core/\nCore/Math/\n  v.h\n")
         myFixture.addFileToProject("fn/v.h", "")
         myFixture.addFileToProject("fn/main.cpp", "")
 
@@ -227,9 +227,9 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewAppliesFiltersInsideFoldersAndSkipsMissingFiles() {
-        myFixture.addFileToProject("ff/megatron.filters", "Sources: *.cpp")
+        myFixture.addFileToProject("ff/megatron/default.filters", "Sources: *.cpp")
         myFixture.addFileToProject(
-            "ff/megatron.folders",
+            "ff/megatron/default.folders",
             "Core/\n  a.cpp\n  notes.md\n  gone.cpp\n",
         )
         myFixture.addFileToProject("ff/a.cpp", "")
@@ -257,7 +257,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewResolvesAssignmentsCaseInsensitively() {
-        myFixture.addFileToProject("fc/megatron.folders", "Core/\n  SRC/Engine.CPP\n")
+        myFixture.addFileToProject("fc/megatron/default.folders", "Core/\n  SRC/Engine.CPP\n")
         myFixture.addFileToProject("fc/src/engine.cpp", "")
 
         val state = MegatronFilterState.getInstance(project)
@@ -304,7 +304,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewPatternsAssignFilesAndShrinkUnassigned() {
-        myFixture.addFileToProject("pw/megatron.folders", "Engine/\n  src/**\n")
+        myFixture.addFileToProject("pw/megatron/default.folders", "Engine/\n  src/**\n")
         myFixture.addFileToProject("pw/src/a.cpp", "")
         myFixture.addFileToProject("pw/src/deep/b.h", "")
         myFixture.addFileToProject("pw/main.cpp", "")
@@ -333,7 +333,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewExclusionReturnsFileToUnassigned() {
-        myFixture.addFileToProject("px/megatron.folders", "Engine/\n  src/**\n  !src/gen.cpp\n")
+        myFixture.addFileToProject("px/megatron/default.folders", "Engine/\n  src/**\n  !src/gen.cpp\n")
         myFixture.addFileToProject("px/src/a.cpp", "")
         myFixture.addFileToProject("px/src/gen.cpp", "")
 
@@ -361,8 +361,8 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     }
 
     fun testFolderViewEngineFiltersApplyToPatternMatches() {
-        myFixture.addFileToProject("pf/megatron.filters", "Sources: *.cpp")
-        myFixture.addFileToProject("pf/megatron.folders", "All/\n  **\n")
+        myFixture.addFileToProject("pf/megatron/default.filters", "Sources: *.cpp")
+        myFixture.addFileToProject("pf/megatron/default.folders", "All/\n  **\n")
         myFixture.addFileToProject("pf/a.cpp", "")
         myFixture.addFileToProject("pf/notes.md", "hidden by Sources group")
 

@@ -1,11 +1,7 @@
 package com.daverobins.projectfilesbrowser
 
-import com.intellij.notification.NotificationGroupManager
-import com.intellij.notification.NotificationType
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import java.io.IOException
 
@@ -16,46 +12,33 @@ import java.io.IOException
  */
 class FolderLayoutStore(
     private val project: Project,
-    private val rootDir: VirtualFile,
+    rootDir: VirtualFile,
 ) {
 
-    private var cachedStamp = NO_FILE_STAMP
+    private val sets = ConfigSetManager(project, rootDir)
+
+    private var cachedKey: Pair<String, Long>? = null
     private var cachedLayout = FolderLayout()
 
     @Synchronized
     fun layout(): FolderLayout {
-        val file = rootDir.findChild(FOLDERS_FILE_NAME)
-        if (file == null || file.isDirectory || !file.isValid) {
-            cachedStamp = NO_FILE_STAMP
+        val file = sets.foldersFile()
+        if (file == null) {
+            cachedKey = null
             cachedLayout = FolderLayout()
             return cachedLayout
         }
-        if (file.modificationStamp != cachedStamp) {
+        val key = file.path to file.modificationStamp
+        if (key != cachedKey) {
             cachedLayout = parseFoldersFile(loadText(file))
-            cachedStamp = file.modificationStamp
+            cachedKey = key
         }
         return cachedLayout
     }
 
-    /** Applies [change] to the current layout and rewrites megatron.folders. */
+    /** Applies [change] to the current layout and rewrites the effective set's folders file. EDT only. */
     fun mutate(change: (FolderLayout) -> FolderLayout) {
-        val updated = change(layout())
-        try {
-            WriteCommandAction.runWriteCommandAction(project) {
-                val file = rootDir.findChild(FOLDERS_FILE_NAME)
-                    ?: rootDir.createChildData(this, FOLDERS_FILE_NAME)
-                VfsUtil.saveText(file, updated.serialize())
-            }
-        } catch (e: IOException) {
-            logger<FolderLayoutStore>().warn("Failed to write $FOLDERS_FILE_NAME", e)
-            NotificationGroupManager.getInstance()
-                .getNotificationGroup("Megatron")
-                .createNotification(
-                    "Could not update $FOLDERS_FILE_NAME: ${e.message}",
-                    NotificationType.ERROR,
-                )
-                .notify(project)
-        }
+        sets.writeFoldersFile(change(layout()).serialize())
     }
 
     private fun loadText(file: VirtualFile): String =
@@ -68,6 +51,5 @@ class FolderLayoutStore(
 
     companion object {
         const val FOLDERS_FILE_NAME = "megatron.folders"
-        private const val NO_FILE_STAMP = -1L
     }
 }

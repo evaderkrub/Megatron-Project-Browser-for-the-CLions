@@ -70,4 +70,22 @@ class ConfigSetManagerTest : BasePlatformTestCase() {
             state.setActiveSet("default")
         }
     }
+
+    fun testSwitchingSetsChangesEngineVisibility() {
+        myFixture.addFileToProject("sw/megatron/aa.filters", "Docs: *.md")
+        myFixture.addFileToProject("sw/megatron/bb.filters", "Sources: *.cpp")
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("sw"))
+        val engine = FilterEngine(project, rootDir)
+        val state = MegatronFilterState.getInstance(project)
+        try {
+            state.setActiveSet("aa")
+            assertTrue(engine.isGroupVisible("x.md", "x.md"))
+            assertFalse(engine.isGroupVisible("y.cpp", "y.cpp"))
+            state.setActiveSet("bb")
+            assertFalse(engine.isGroupVisible("x.md", "x.md"))
+            assertTrue(engine.isGroupVisible("y.cpp", "y.cpp"))
+        } finally {
+            state.setActiveSet("default")
+        }
+    }
 }

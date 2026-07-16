@@ -16,7 +16,9 @@ class FilterEngine(
     private val gate: ProjectModelGate? = null,
 ) {
 
-    private var cachedStamp = NO_FILE_STAMP
+    private val sets = ConfigSetManager(project, rootDir)
+
+    private var cachedKey: Pair<String, Long>? = null
     private var cachedGroups: List<FilterGroup> = emptyList()
 
     /** Group/default visibility only — no project-model gating. Used by the VFS watcher. */
@@ -47,15 +49,16 @@ class FilterEngine(
 
     @Synchronized
     private fun groups(): List<FilterGroup> {
-        val file = rootDir.findChild(FILTER_FILE_NAME)
-        if (file == null || file.isDirectory || !file.isValid) {
-            cachedStamp = NO_FILE_STAMP
+        val file = sets.filtersFile()
+        if (file == null) {
+            cachedKey = null
             cachedGroups = emptyList()
             return cachedGroups
         }
-        if (file.modificationStamp != cachedStamp) {
+        val key = file.path to file.modificationStamp
+        if (key != cachedKey) {
             cachedGroups = parseFilterFile(loadText(file))
-            cachedStamp = file.modificationStamp
+            cachedKey = key
         }
         return cachedGroups
     }
@@ -70,6 +73,5 @@ class FilterEngine(
 
     companion object {
         const val FILTER_FILE_NAME = "megatron.filters"
-        private const val NO_FILE_STAMP = -1L
     }
 }
