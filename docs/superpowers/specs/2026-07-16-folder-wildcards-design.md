@@ -88,18 +88,21 @@ edits, so folder contents track the file system with no new listeners.
   `ExplicitEntry(path, folder)`, `PatternEntry(glob, folder, position)`,
   `ExclusionEntry(matcher)` — reusing the existing `GlobPattern` from
   FilterConfig.kt. `folderFor(relativePath)` implements the precedence
-  chain. New: `assignsByPattern(relativePath): Boolean` distinction so
-  mutations know explicit-vs-pattern. Mutations updated: `withAssignment`
-  also drops matching exact-path exclusions; new `withExclusion(path,
-  folder)`. Serializer per the section above.
+  chain; `patternFolderFor(relativePath)` exposes rules-only resolution.
+  Mutations carry the exclusion semantics internally: `withAssignment`
+  also drops matching exact-path exclusions; `withUnassigned` removes the
+  explicit entry and writes the exclusion itself when a pattern would
+  still claim the file. Serializer per the section above.
 - **`FilteredTreeStructure` / `VirtualFolderNode`** (modified): folder
   children and the `<Unassigned>` exclusion switch from "listed paths" to
   "resolve rules over the visible file walk": collect visible files once
   per folder-view build (same collector as flat mode), resolve each file's
   folder, group. Missing-file entries naturally drop out (nothing on disk
   to resolve); explicit entries keep case-insensitive resolution behavior.
-- **`FolderActions` / `FolderDnD`** (modified): unassign path branches on
-  explicit-vs-pattern; menu visibility uses resolved folder.
+- **`FolderActions` / `FolderDnD`** (unchanged): menu visibility already
+  uses `folderFor` (which now covers pattern assignment), and the mutation
+  entry points keep their signatures with the new semantics inside
+  `FolderLayout` — no UI-file changes needed.
 - **`FolderLayoutStore`, watcher, toggle, plugin.xml**: unchanged.
 - **Version**: 0.6.0.
 
