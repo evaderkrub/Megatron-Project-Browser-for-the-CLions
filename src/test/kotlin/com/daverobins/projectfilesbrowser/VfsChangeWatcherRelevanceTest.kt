@@ -1,5 +1,6 @@
 package com.daverobins.projectfilesbrowser
 
+import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isFilterFileEvent
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantEitherPath
 import com.daverobins.projectfilesbrowser.VfsChangeWatcher.Companion.isRelevantPath
 import org.junit.Assert.assertFalse
@@ -79,5 +80,22 @@ class VfsChangeWatcherRelevanceTest {
     @Test
     fun moveOutOfRootIsRelevantViaOldPath() {
         assertTrue(isRelevantEitherPath(root, "/proj/src/main.cpp", "/elsewhere/main.cpp", isDirectory = false))
+    }
+
+    @Test
+    fun filterFileEventIsAlwaysRelevant() {
+        assertTrue(isFilterFileEvent(root, null, "/proj/megatron.filters"))
+    }
+
+    @Test
+    fun filterFileRenameAwayIsRelevantViaOldPath() {
+        assertTrue(isFilterFileEvent(root, "/proj/megatron.filters", "/proj/renamed.txt"))
+    }
+
+    @Test
+    fun otherFilesAreNotFilterFileEvents() {
+        assertFalse(isFilterFileEvent(root, null, "/proj/main.cpp"))
+        assertFalse(isFilterFileEvent(root, null, "/proj/sub/megatron.filters")) // only root-level file counts
+        assertFalse(isFilterFileEvent(root, null, "/other/megatron.filters"))
     }
 }

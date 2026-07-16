@@ -38,26 +38,37 @@ class VfsChangeWatcher(
             })
     }
 
-    private fun isRelevant(event: VFileEvent): Boolean = when (event) {
-        is VFileContentChangeEvent -> false
-        is VFileCreateEvent -> isRelevantPath(rootPath, event.path, event.isDirectory)
-        is VFileDeleteEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
-        is VFileCopyEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
-        is VFileMoveEvent ->
-            isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory)
-        is VFilePropertyChangeEvent ->
-            event.propertyName == VirtualFile.PROP_NAME &&
-                isRelevantEitherPath(
-                    rootPath,
-                    event.file.parent?.path?.let { "$it/${event.oldValue}" },
-                    event.path,
-                    event.file.isDirectory,
-                )
-        else -> true // unknown event type: rebuild conservatively rather than miss a change
+    private fun isRelevant(event: VFileEvent): Boolean {
+        val oldPath = when (event) {
+            is VFileMoveEvent -> event.oldPath
+            is VFilePropertyChangeEvent ->
+                if (event.propertyName == VirtualFile.PROP_NAME) event.oldPath else null
+            else -> null
+        }
+        if (isFilterFileEvent(rootPath, oldPath, event.path)) return true
+        return when (event) {
+            is VFileContentChangeEvent -> false
+            is VFileCreateEvent -> isRelevantPath(rootPath, event.path, event.isDirectory)
+            is VFileDeleteEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
+            is VFileCopyEvent -> isRelevantPath(rootPath, event.path, event.file.isDirectory)
+            is VFileMoveEvent ->
+                isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory)
+            is VFilePropertyChangeEvent ->
+                event.propertyName == VirtualFile.PROP_NAME &&
+                    isRelevantEitherPath(rootPath, event.oldPath, event.newPath, event.file.isDirectory)
+            else -> true // unknown event type: rebuild conservatively rather than miss a change
+        }
     }
 
     companion object {
         const val DEBOUNCE_MS = 500
+
+        /** Events touching <root>/megatron.filters always trigger a refresh —
+         *  including content changes, since the file's content defines the filters. */
+        fun isFilterFileEvent(rootPath: String, oldPath: String?, newPath: String): Boolean {
+            val filterFilePath = "$rootPath/${FilterEngine.FILTER_FILE_NAME}"
+            return newPath == filterFilePath || oldPath == filterFilePath
+        }
 
         fun isRelevantPath(rootPath: String, path: String, isDirectory: Boolean): Boolean {
             if (path == rootPath) return true
