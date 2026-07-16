@@ -35,8 +35,8 @@ churn inside excluded directories (`cmake-build-*`, `.git`, ...) causes none.
 
 `BulkFileListener` subscribed to the `VirtualFileManager.VFS_CHANGES` topic on the
 project message bus, connection scoped to the tool window disposable. Events are
-already applied when received; we only string-inspect paths/names — no I/O, nothing
-to fail, deleted files are never dereferenced. Debounce via `SingleAlarm` (500 ms,
+already applied when received; we only inspect event paths/names and cheap event
+properties (no file I/O), so there is nothing to fail. Debounce via `SingleAlarm` (500 ms,
 same parent disposable), whose task invokes a callback on the EDT.
 
 Alternatives rejected: `AsyncFileListener` (designed for expensive pre-apply
@@ -47,7 +47,7 @@ advantage for a cheap check).
 
 - **`VfsChangeWatcher.kt`** (new, one file): owns the message-bus subscription, the
   relevance decision, and the debounce. Constructor:
-  `VfsChangeWatcher(project, rootDir, parentDisposable, onChange: Runnable)`.
+  `VfsChangeWatcher(project, rootDir, parentDisposable, onChange: () -> Unit)`.
   Pure relevance logic exposed as a companion function
   `isRelevant(rootPath: String, event info): Boolean` operating on strings/booleans
   only — unit-testable without an IDE.
