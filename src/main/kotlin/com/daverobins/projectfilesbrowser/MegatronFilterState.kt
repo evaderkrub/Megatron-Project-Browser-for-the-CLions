@@ -21,16 +21,21 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
         var disabledGroups: MutableSet<String> = mutableSetOf()
     }
 
+    @Volatile
     private var current = State()
 
+    @Synchronized
     override fun getState(): State = current
 
+    @Synchronized
     override fun loadState(state: State) {
         current = state
     }
 
+    @Synchronized
     fun isEnabled(name: String): Boolean = name !in current.disabledGroups
 
+    @Synchronized
     fun setEnabled(name: String, enabled: Boolean) {
         if (enabled) current.disabledGroups.remove(name) else current.disabledGroups.add(name)
     }
