@@ -88,4 +88,32 @@ class ConfigSetManagerTest : BasePlatformTestCase() {
             state.setActiveSet("default")
         }
     }
+
+    fun testValidateSetNameRejectsEmptyIllegalCharsDotAndDuplicates() {
+        assertNotNull(validateSetName("", emptyList()))
+        assertNotNull(validateSetName("   ", emptyList()))
+        assertNotNull(validateSetName("a/b", emptyList()))
+        assertNotNull(validateSetName("a\\b", emptyList()))
+        assertNotNull(validateSetName("a*b", emptyList()))
+        assertNotNull(validateSetName("a?b", emptyList()))
+        assertNotNull(validateSetName("a:b", emptyList()))
+        assertNotNull(validateSetName(".hidden", emptyList()))
+        assertNotNull(validateSetName("WORK", listOf("work", "other")))
+        assertNull(validateSetName("gui-work", listOf("default")))
+        assertNull(validateSetName("  fresh  ", listOf("default")))
+    }
+
+    fun testCreateSetWritesTemplatedFilesForTheGivenName() {
+        myFixture.addFileToProject("cs6/main.cpp", "")
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("cs6"))
+        val sets = ConfigSetManager(project, rootDir)
+
+        sets.createSet("gui-work")
+
+        val filters = requireNotNull(rootDir.findFileByRelativePath("megatron/gui-work.filters"))
+        val folders = requireNotNull(rootDir.findFileByRelativePath("megatron/gui-work.folders"))
+        assertEquals(1, parseFilterFile(String(filters.contentsToByteArray(), filters.charset)).size)
+        assertTrue(parseFoldersFile(String(folders.contentsToByteArray(), folders.charset)).header.isNotEmpty())
+        assertEquals(listOf("gui-work"), sets.setNames().map { it.lowercase() })
+    }
 }

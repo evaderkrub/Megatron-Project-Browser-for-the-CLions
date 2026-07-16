@@ -1,4 +1,4 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+﻿import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java")
@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.daverobins"
-version = "0.8.1"
+version = "0.8.2"
 
 repositories {
     mavenCentral()

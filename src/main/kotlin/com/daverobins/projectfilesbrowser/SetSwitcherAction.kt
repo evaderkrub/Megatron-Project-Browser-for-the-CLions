@@ -8,6 +8,8 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.InputValidator
+import com.intellij.openapi.ui.Messages
 import javax.swing.JComponent
 
 /**
@@ -31,11 +33,9 @@ class SetSwitcherAction(
     override fun createPopupActionGroup(button: JComponent, dataContext: DataContext): DefaultActionGroup {
         val group = DefaultActionGroup()
         val names = sets.setNames()
-        if (names.isEmpty()) {
-            group.add(CreateDefaultSetAction())
-        } else {
-            for (name in names) group.add(SetToggleAction(name))
-        }
+        for (name in names) group.add(SetToggleAction(name))
+        if (names.isNotEmpty()) group.addSeparator()
+        group.add(NewSetAction())
         return group
     }
 
@@ -53,11 +53,27 @@ class SetSwitcherAction(
         }
     }
 
-    private inner class CreateDefaultSetAction : AnAction("Create Default Set") {
+    private inner class NewSetAction : AnAction("New Set…") {
         override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
         override fun actionPerformed(e: AnActionEvent) {
-            sets.createDefaultSet()
+            val existing = sets.setNames()
+            val validator = object : InputValidator {
+                override fun checkInput(input: String): Boolean =
+                    validateSetName(input, existing) == null
+
+                override fun canClose(input: String): Boolean = checkInput(input)
+            }
+            val name = Messages.showInputDialog(
+                project,
+                "Set name:",
+                "New Megatron Set",
+                null,
+                if (existing.isEmpty()) ConfigSetManager.DEFAULT_SET else null,
+                validator,
+            )?.trim()?.takeIf { it.isNotEmpty() } ?: return
+            sets.createSet(name)
+            MegatronFilterState.getInstance(project).setActiveSet(name)
             onChanged()
         }
     }

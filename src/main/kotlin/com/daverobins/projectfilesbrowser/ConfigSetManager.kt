@@ -51,12 +51,15 @@ class ConfigSetManager(private val project: Project, private val rootDir: Virtua
     }
 
     /** Creates the documented default set and opens both files in the editor. EDT only. */
-    fun createDefaultSet() {
-        writeConfigFile("$DEFAULT_SET.$FILTERS_EXT", DEFAULT_FILTERS_CONTENT)
-        writeConfigFile("$DEFAULT_SET.$FOLDERS_EXT", DEFAULT_FOLDERS_CONTENT)
+    fun createDefaultSet() = createSet(DEFAULT_SET)
+
+    /** Creates <name>.filters + <name>.folders from the documented templates and opens both. EDT only. */
+    fun createSet(name: String) {
+        writeConfigFile("$name.$FILTERS_EXT", DEFAULT_FILTERS_CONTENT)
+        writeConfigFile("$name.$FOLDERS_EXT", DEFAULT_FOLDERS_CONTENT)
         val editors = FileEditorManager.getInstance(project)
-        configFile("$DEFAULT_SET.$FOLDERS_EXT")?.let { editors.openFile(it, false) }
-        configFile("$DEFAULT_SET.$FILTERS_EXT")?.let { editors.openFile(it, true) }
+        configFile("$name.$FOLDERS_EXT")?.let { editors.openFile(it, false) }
+        configFile("$name.$FILTERS_EXT")?.let { editors.openFile(it, true) }
     }
 
     private fun writeConfigFile(name: String, text: String) {
@@ -118,4 +121,20 @@ class ConfigSetManager(private val project: Project, private val rootDir: Virtua
             |# but keep this comment header.
             |""".trimMargin()
     }
+}
+
+private const val INVALID_SET_NAME_CHARS = "\\/:*?\"<>|"
+
+/** Returns an error message, or null when [name] (after trimming) is a valid new set name. */
+fun validateSetName(name: String, existingSets: Collection<String>): String? {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return "Set name cannot be empty"
+    if (trimmed.any { it in INVALID_SET_NAME_CHARS }) {
+        return "Set name cannot contain ${INVALID_SET_NAME_CHARS.toList().joinToString(" ")}"
+    }
+    if (trimmed.startsWith(".")) return "Set name cannot start with a dot"
+    if (existingSets.any { it.equals(trimmed, ignoreCase = true) }) {
+        return "A set named '$trimmed' already exists"
+    }
+    return null
 }
