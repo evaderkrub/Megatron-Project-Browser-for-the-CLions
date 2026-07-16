@@ -1,5 +1,6 @@
 package com.daverobins.projectfilesbrowser
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -53,6 +54,7 @@ class MegatronTreePopupGroup(
     private val store: FolderLayoutStore,
     private val tree: Tree,
     private val onChanged: () -> Unit,
+    private val onRefresh: () -> Unit,
 ) : ActionGroup() {
 
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
@@ -94,6 +96,8 @@ class MegatronTreePopupGroup(
             if (actions.isNotEmpty()) actions.add(Separator.getInstance())
             actions.addAll(extras)
         }
+        if (actions.isNotEmpty()) actions.add(Separator.getInstance())
+        actions.add(RefreshAction())
         return actions.toTypedArray()
     }
 
@@ -219,5 +223,13 @@ class MegatronTreePopupGroup(
             if (answer != Messages.YES) return
             mutateAndRefresh { it.withFolderDeleted(folder) }
         }
+    }
+
+    private inner class RefreshAction :
+        AnAction("Refresh", "Rebuild the file tree", AllIcons.Actions.Refresh) {
+
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+        override fun actionPerformed(e: AnActionEvent) = onRefresh()
     }
 }

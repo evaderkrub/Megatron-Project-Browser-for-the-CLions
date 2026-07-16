@@ -1,11 +1,12 @@
 package com.daverobins.projectfilesbrowser
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.event.DocumentEvent as EditorDocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener as EditorDocumentListener
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
@@ -44,8 +45,12 @@ class ProjectFilesPanel(
     private val engine = FilterEngine(project, rootDir, projectModelGate)
     private val sets = ConfigSetManager(project, rootDir)
     private val folderStore = FolderLayoutStore(project, rootDir)
+    private val scanner = BookmarkScanner()
     private val structureModel =
-        StructureTreeModel(FilteredTreeStructure(project, rootDir, engine, folderStore), parentDisposable)
+        StructureTreeModel(
+            FilteredTreeStructure(project, rootDir, engine, folderStore, scanner, sets),
+            parentDisposable,
+        )
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
     private val banner: JPanel = buildBanner()
     private val quickFilterField = SearchTextField(false)
@@ -67,15 +72,10 @@ class ProjectFilesPanel(
             JComponent.WHEN_FOCUSED,
         )
 
-        val refresh = object : AnAction("Refresh", "Rebuild the file tree", AllIcons.Actions.Refresh) {
-            override fun actionPerformed(e: AnActionEvent) {
-                rootDir.refresh(true, true) { structureModel.invalidateAsync() }
-            }
-        }
         val toolbar = ActionManager.getInstance().createActionToolbar(
             "ProjectFilesBrowser",
             DefaultActionGroup(
-                refresh,
+                BookmarkAction(project, sets),
                 SetSwitcherAction(project, sets) { configChanged() },
                 FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
                 FlatViewToggleAction(project) { structureModel.invalidateAsync() },
@@ -109,7 +109,9 @@ class ProjectFilesPanel(
 
         PopupHandler.installFollowingSelectionTreePopup(
             tree,
-            MegatronTreePopupGroup(project, rootDir, folderStore, tree) { structureModel.invalidateAsync() },
+            MegatronTreePopupGroup(project, rootDir, folderStore, tree, { structureModel.invalidateAsync() }) {
+                rootDir.refresh(true, true) { structureModel.invalidateAsync() }
+            },
             "MegatronTreePopup",
         )
 
@@ -130,6 +132,26 @@ class ProjectFilesPanel(
         projectModelGate.subscribe(parentDisposable) {
             structureModel.invalidateAsync()
         }
+
+        val bookmarkAlarm = SingleAlarm(
+            Runnable { structureModel.invalidateAsync() },
+            QUICK_FILTER_DEBOUNCE_MS,
+            parentDisposable,
+        )
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(
+            object : EditorDocumentListener {
+                override fun documentChanged(event: EditorDocumentEvent) {
+                    val changed = FileDocumentManager.getInstance().getFile(event.document) ?: return
+                    if (!changed.path.startsWith(rootDir.path + "/")) return
+                    if (scanner.hadBookmarks(changed.path) ||
+                        event.document.charsSequence.contains(BOOKMARK_MARKER_WORD, ignoreCase = true)
+                    ) {
+                        bookmarkAlarm.cancelAndRequest()
+                    }
+                }
+            },
+            parentDisposable,
+        )
     }
 
     private fun buildBanner(): JPanel {
@@ -156,6 +178,10 @@ class ProjectFilesPanel(
 
     private fun openSelection() {
         val path = tree.selectionPath ?: return
+        TreeUtil.getLastUserObject(BookmarkNode::class.java, path)?.let {
+            openBookmark(it)
+            return
+        }
         val node = TreeUtil.getLastUserObject(FileNode::class.java, path) ?: return
         val file = node.file
         if (!file.isDirectory && file.isValid) {
@@ -163,9 +189,19 @@ class ProjectFilesPanel(
         }
     }
 
+    /** Opens the bookmark's file with the caret on its line. */
+    private fun openBookmark(node: BookmarkNode) {
+        if (!node.file.isValid) return
+        OpenFileDescriptor(project, node.file, node.bookmark.line, 0).navigate(true)
+    }
+
     /** Ctrl+double-click: open the header/source pair when one exists, else plain open. */
     private fun openPairOrSelection(event: MouseEvent) {
         val path = tree.getPathForLocation(event.x, event.y) ?: return
+        TreeUtil.getLastUserObject(BookmarkNode::class.java, path)?.let {
+            openBookmark(it)
+            return
+        }
         val node = TreeUtil.getLastUserObject(FileNode::class.java, path) ?: return
         val file = node.file
         if (file.isDirectory || !file.isValid) return
