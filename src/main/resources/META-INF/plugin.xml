@@ -10,7 +10,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Project Files"
+        <toolWindow id="Megatron"
                     anchor="left"
                     icon="AllIcons.Toolwindows.ToolWindowProject"
                     factoryClass="com.daverobins.projectfilesbrowser.ProjectFilesToolWindowFactory"/>
