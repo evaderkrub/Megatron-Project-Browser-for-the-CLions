@@ -18,7 +18,7 @@ The **Megatron** tool window appears on the left stripe (blue lion icon). It roo
 
 | Control | What it does |
 |---|---|
-| **⟳ Refresh** | Forces a VFS refresh and rebuilds the tree. Rarely needed — the tree auto-refreshes (debounced ~0.5 s) when relevant files change. |
+| **🔖 Add Bookmark** | Inserts a bookmark comment above the caret line of the active editor — `// megatron/<active set>: ""` (`#` in CMake files) — and puts the caret between the quotes so you type the title in place. Disabled when no editor is open. |
 | **`<set name>` ▾** (combo button) | Shows the **active config set** and switches between sets. Ends with **New Set…**, which asks for a name, creates `megatron/<name>.filters` + `<name>.folders` from documented templates, switches to it, and opens both files for editing. |
 | **Funnel dropdown** | Filter toggles: **Only CMake Project Files** (pinned first — when on, only files that belong to the loaded CMake project model are shown; a no-op until CMake finishes loading) and one checkbox per **filter group** from the active set's `.filters` file. A file is visible if it matches ANY pattern of ANY enabled group. |
 | **☰ Flat View** | Shows all visible files as one flat, name-sorted list with grey relative paths instead of a directory tree. |
@@ -31,6 +31,19 @@ When no config sets exist yet, a banner appears above the tree: **"No Megatron c
 
 - **Double-click** (or **Enter**) a file — opens it in the editor.
 - **Ctrl + double-click** a file — opens it *and* its header/source counterpart (`foo.cpp` ↔ `foo.h`; same base name across `c/cc/cpp/cxx` ↔ `h/hh/hpp/hxx`, preferring the same directory). Falls back to a plain open when no counterpart exists. The counterpart search deliberately ignores filters and the CMake gate — headers missing from `CMakeLists.txt` are still found.
+
+## Bookmarks
+
+A bookmark is a plain comment in your code:
+
+```cpp
+// megatron: "fix this overflow"          ← shown in every config set
+// megatron/default: "wire up the panel"  ← shown only when the 'default' set is active
+```
+
+(`# megatron: "..."` in CMake files.) The **🔖 Add Bookmark** toolbar button inserts one above the caret line, pre-stamped with the active set, caret between the quotes.
+
+All bookmarks in filter-visible files appear under a **Bookmarks** node pinned at the bottom of the tree (hidden when there are none), titled by the quoted text with a grey `path:line`. Double-click or Enter jumps to the line. To delete or edit a bookmark, edit the comment. Bookmarks in files hidden by the current filters (or quick filter, or CMake gate) don't appear.
 
 ## Right-click menu
 
@@ -51,6 +64,12 @@ On **folders** (virtual folders, disk directories, and `<Unassigned>`):
 | **Open in Pinned Tabs** | Same, but pins each tab. |
 | **New Folder… / New Subfolder…** | Creates virtual folders (Folder View only). |
 | **Rename… / Delete** | Renames a virtual folder (subfolders and assignments follow) or deletes it (its files return to `<Unassigned>`). |
+
+On **anything** (always shown, last entry):
+
+| Entry | What it does |
+|---|---|
+| **Refresh** | Forces a VFS refresh and rebuilds the tree. Rarely needed — the tree auto-refreshes when relevant files change. |
 
 **Drag and drop** (Folder View): drag one or more files onto a virtual folder to assign them, onto `<Unassigned>` to unassign.
 
