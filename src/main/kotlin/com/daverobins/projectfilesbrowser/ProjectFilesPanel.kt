@@ -54,8 +54,14 @@ class ProjectFilesPanel(
                 rootDir.refresh(true, true) { structureModel.invalidateAsync() }
             }
         }
-        val toolbar = ActionManager.getInstance()
-            .createActionToolbar("ProjectFilesBrowser", DefaultActionGroup(refresh), true)
+        val toolbar = ActionManager.getInstance().createActionToolbar(
+            "ProjectFilesBrowser",
+            DefaultActionGroup(
+                refresh,
+                FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
+            ),
+            true,
+        )
         toolbar.targetComponent = tree
         setToolbar(toolbar.component)
         setContent(ScrollPaneFactory.createScrollPane(tree))
