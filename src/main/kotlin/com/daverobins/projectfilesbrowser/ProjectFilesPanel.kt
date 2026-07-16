@@ -29,8 +29,9 @@ class ProjectFilesPanel(
 
     private val projectModelGate = OcWorkspaceGate(project)
     private val engine = FilterEngine(project, rootDir, projectModelGate)
+    private val folderStore = FolderLayoutStore(project, rootDir)
     private val structureModel =
-        StructureTreeModel(FilteredTreeStructure(project, rootDir, engine), parentDisposable)
+        StructureTreeModel(FilteredTreeStructure(project, rootDir, engine, folderStore), parentDisposable)
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
 
     init {
@@ -61,6 +62,7 @@ class ProjectFilesPanel(
                 refresh,
                 FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
                 FlatViewToggleAction(project) { structureModel.invalidateAsync() },
+                FolderViewToggleAction(project) { structureModel.invalidateAsync() },
             ),
             true,
         )
