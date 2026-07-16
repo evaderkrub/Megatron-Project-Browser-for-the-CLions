@@ -25,7 +25,8 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     private var current = State()
 
     @Synchronized
-    override fun getState(): State = current
+    override fun getState(): State =
+        State().apply { disabledGroups = current.disabledGroups.toMutableSet() }
 
     @Synchronized
     override fun loadState(state: State) {

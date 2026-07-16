@@ -29,7 +29,7 @@ Format rules:
   first colon, trimmed; patterns are comma-separated, trimmed; empty patterns ignored.
 - Lines starting with `#` (after trimming) and blank lines are ignored.
 - Malformed lines (no colon, empty name, or no patterns) are skipped silently.
-- Duplicate group names: last occurrence wins.
+- Duplicate group names: last occurrence wins for content; the group keeps the FIRST occurrence's position in the file order.
 - Encoding UTF-8.
 
 ## Wildcard Semantics
@@ -82,7 +82,7 @@ when the file's VFS modification stamp changed since the last parse.
   - `class GlobPattern` — compiles one wildcard to a `Regex` at construction;
     `matches(relativePath: String, fileName: String): Boolean` applies the
     path-vs-name rule.
-  - `data class FilterGroup(name: String, patterns: List<GlobPattern>)`.
+  - `class FilterGroup(name: String, patterns: List<GlobPattern>)`.
   - `fun parseFilterFile(text: String): List<FilterGroup>` per the format rules.
 - **`FilterEngine.kt`** (new): project-scoped service object owned by the panel (not
   a global). Holds the parsed groups cached by the file's modification stamp,

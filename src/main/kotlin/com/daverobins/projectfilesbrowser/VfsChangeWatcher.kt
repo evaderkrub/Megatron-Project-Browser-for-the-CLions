@@ -67,7 +67,8 @@ class VfsChangeWatcher(
          *  including content changes, since the file's content defines the filters. */
         fun isFilterFileEvent(rootPath: String, oldPath: String?, newPath: String): Boolean {
             val filterFilePath = "$rootPath/${FilterEngine.FILTER_FILE_NAME}"
-            return newPath == filterFilePath || oldPath == filterFilePath
+            return newPath.equals(filterFilePath, ignoreCase = true) ||
+                (oldPath != null && oldPath.equals(filterFilePath, ignoreCase = true))
         }
 
         fun isRelevantPath(rootPath: String, path: String, isDirectory: Boolean): Boolean {

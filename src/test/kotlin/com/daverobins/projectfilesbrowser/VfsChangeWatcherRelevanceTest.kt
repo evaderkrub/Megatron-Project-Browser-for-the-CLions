@@ -98,4 +98,9 @@ class VfsChangeWatcherRelevanceTest {
         assertFalse(isFilterFileEvent(root, null, "/proj/sub/megatron.filters")) // only root-level file counts
         assertFalse(isFilterFileEvent(root, null, "/other/megatron.filters"))
     }
+
+    @Test
+    fun filterFileMatchIsCaseInsensitive() {
+        assertTrue(isFilterFileEvent(root, null, "/proj/Megatron.Filters"))
+    }
 }
