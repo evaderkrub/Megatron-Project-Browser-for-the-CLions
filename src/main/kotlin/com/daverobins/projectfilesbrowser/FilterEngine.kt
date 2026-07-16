@@ -10,7 +10,11 @@ import java.io.IOException
  * file's VFS modification stamp and combines them with the per-project toggle
  * state to answer visibility queries.
  */
-class FilterEngine(private val project: Project, private val rootDir: VirtualFile) {
+class FilterEngine(
+    private val project: Project,
+    private val rootDir: VirtualFile,
+    private val gate: ProjectModelGate? = null,
+) {
 
     private var cachedStamp = NO_FILE_STAMP
     private var cachedGroups: List<FilterGroup> = emptyList()
@@ -19,8 +23,17 @@ class FilterEngine(private val project: Project, private val rootDir: VirtualFil
     fun isGroupVisible(relativePath: String, fileName: String): Boolean =
         visibleByGroups(enabledGroups(), relativePath, fileName)
 
-    fun isFileVisible(relativePath: String, fileName: String): Boolean =
-        isGroupVisible(relativePath, fileName)
+    /** Full visibility: group filtering AND (when enabled and active) the project-model gate. */
+    fun isFileVisible(file: VirtualFile): Boolean {
+        if (!isGroupVisible(relativePath(file), file.name)) return false
+        val activeGate = gate ?: return true
+        if (!MegatronFilterState.getInstance(project).isCmakeGateEnabled()) return true
+        if (!activeGate.isActive()) return true
+        return activeGate.isInModel(file)
+    }
+
+    private fun relativePath(file: VirtualFile): String =
+        file.path.removePrefix("${rootDir.path}/")
 
     fun groupsForUi(): List<Pair<String, Boolean>> {
         val state = MegatronFilterState.getInstance(project)

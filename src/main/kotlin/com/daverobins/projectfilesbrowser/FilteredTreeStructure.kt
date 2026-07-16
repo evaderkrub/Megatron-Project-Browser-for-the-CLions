@@ -67,7 +67,7 @@ class FileNode(
             if (!child.isValid) continue
             if (child.isDirectory) {
                 if (FileFilter.includeDirectory(child.name)) collectVisibleFiles(child, out)
-            } else if (engine.isFileVisible(relativePath(child), child.name)) {
+            } else if (engine.isFileVisible(child)) {
                 out.add(child)
             }
         }
@@ -77,7 +77,7 @@ class FileNode(
         if (candidate.isDirectory) {
             FileFilter.includeDirectory(candidate.name) && hasVisibleContent(candidate)
         } else {
-            engine.isFileVisible(relativePath(candidate), candidate.name)
+            engine.isFileVisible(candidate)
         }
 
     /** A directory is shown only if filtering leaves something inside it. */
