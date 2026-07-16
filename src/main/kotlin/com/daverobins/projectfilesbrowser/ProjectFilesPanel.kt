@@ -27,7 +27,8 @@ class ProjectFilesPanel(
     parentDisposable: Disposable,
 ) : SimpleToolWindowPanel(true, true) {
 
-    private val engine = FilterEngine(project, rootDir)
+    private val projectModelGate = OcWorkspaceGate(project)
+    private val engine = FilterEngine(project, rootDir, projectModelGate)
     private val structureModel =
         StructureTreeModel(FilteredTreeStructure(project, rootDir, engine), parentDisposable)
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
@@ -73,6 +74,10 @@ class ProjectFilesPanel(
             parentDisposable,
             { relativePath, fileName -> engine.isGroupVisible(relativePath, fileName) },
         ) {
+            structureModel.invalidateAsync()
+        }
+
+        projectModelGate.subscribe(parentDisposable) {
             structureModel.invalidateAsync()
         }
     }

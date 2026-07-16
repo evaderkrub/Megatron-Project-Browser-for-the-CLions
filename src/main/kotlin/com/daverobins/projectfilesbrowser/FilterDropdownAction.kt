@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.Project
 
@@ -26,11 +27,25 @@ class FilterDropdownAction(
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
+        val head = arrayOf<AnAction>(CmakeGateToggleAction(), Separator.getInstance())
         val groups = engine.groupsForUi()
-        if (groups.isEmpty()) {
-            return arrayOf(NoFiltersInfoAction())
+        val tail: Array<AnAction> =
+            if (groups.isEmpty()) arrayOf(NoFiltersInfoAction())
+            else groups.map { (name, _) -> GroupToggleAction(name) }.toTypedArray()
+        return head + tail
+    }
+
+    private inner class CmakeGateToggleAction :
+        ToggleAction("Only CMake Project Files", "Show only files that belong to the CMake project model", null) {
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+        override fun isSelected(e: AnActionEvent): Boolean =
+            MegatronFilterState.getInstance(project).isCmakeGateEnabled()
+
+        override fun setSelected(e: AnActionEvent, state: Boolean) {
+            MegatronFilterState.getInstance(project).setCmakeGateEnabled(state)
+            onFilterChanged()
         }
-        return groups.map { (name, _) -> GroupToggleAction(name) }.toTypedArray()
     }
 
     private inner class GroupToggleAction(private val groupName: String) : ToggleAction(groupName) {
