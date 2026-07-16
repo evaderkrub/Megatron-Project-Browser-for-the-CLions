@@ -13,7 +13,7 @@ const val BOOKMARK_MARKER_WORD = "megatron"
 // Comment prefix ('//' or '#'), 'megatron', optional '/set', ':', quoted title.
 // Anchored at line start (after indentation) so markers behind code don't count.
 private val MARKER = Regex(
-    """^\s*(?://|#)\s*megatron(?:/([^:"]*))?\s*:\s*"([^"]*)\"""",
+    """^\s*(?://|#)\s*$BOOKMARK_MARKER_WORD(?:/([^:"]*))?\s*:\s*"([^"]*)\"""",
     RegexOption.IGNORE_CASE,
 )
 
@@ -38,7 +38,7 @@ data class BookmarkInsertion(val lineText: String, val caretColumn: Int)
 fun bookmarkInsertion(caretLineText: String, fileName: String, activeSet: String): BookmarkInsertion {
     val indent = caretLineText.takeWhile { it == ' ' || it == '\t' }
     val prefix = if (isCMakeFile(fileName)) "#" else "//"
-    val line = "$indent$prefix megatron/$activeSet: \"\""
+    val line = "$indent$prefix $BOOKMARK_MARKER_WORD/$activeSet: \"\""
     return BookmarkInsertion(line, line.length - 1)
 }
 
