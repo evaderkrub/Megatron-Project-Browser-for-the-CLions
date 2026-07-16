@@ -13,7 +13,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Megatron"
                     anchor="left"
-                    icon="AllIcons.Toolwindows.ToolWindowProject"
+                    icon="/icons/megatron.png"
                     factoryClass="com.daverobins.projectfilesbrowser.ProjectFilesToolWindowFactory"/>
         <notificationGroup id="Megatron" displayType="BALLOON"/>
     </extensions>
