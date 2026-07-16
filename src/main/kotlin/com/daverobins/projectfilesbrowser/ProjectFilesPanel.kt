@@ -11,17 +11,23 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
+import java.awt.BorderLayout
+import java.awt.FlowLayout
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.DropMode
 import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.KeyStroke
+import javax.swing.event.HyperlinkEvent
 
 class ProjectFilesPanel(
     private val project: Project,
@@ -31,10 +37,12 @@ class ProjectFilesPanel(
 
     private val projectModelGate = OcWorkspaceGate(project)
     private val engine = FilterEngine(project, rootDir, projectModelGate)
+    private val sets = ConfigSetManager(project, rootDir)
     private val folderStore = FolderLayoutStore(project, rootDir)
     private val structureModel =
         StructureTreeModel(FilteredTreeStructure(project, rootDir, engine, folderStore), parentDisposable)
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
+    private val banner: JPanel = buildBanner()
 
     init {
         tree.isRootVisible = true
@@ -62,6 +70,7 @@ class ProjectFilesPanel(
             "ProjectFilesBrowser",
             DefaultActionGroup(
                 refresh,
+                SetSwitcherAction(project, sets) { configChanged() },
                 FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
                 FlatViewToggleAction(project) { structureModel.invalidateAsync() },
                 FolderViewToggleAction(project) { structureModel.invalidateAsync() },
@@ -70,7 +79,10 @@ class ProjectFilesPanel(
         )
         toolbar.targetComponent = tree
         setToolbar(toolbar.component)
-        setContent(ScrollPaneFactory.createScrollPane(tree))
+        val content = JPanel(BorderLayout())
+        content.add(banner, BorderLayout.NORTH)
+        content.add(ScrollPaneFactory.createScrollPane(tree), BorderLayout.CENTER)
+        setContent(content)
 
         PopupHandler.installFollowingSelectionTreePopup(
             tree,
@@ -89,12 +101,34 @@ class ProjectFilesPanel(
             parentDisposable,
             { relativePath, fileName -> engine.isGroupVisible(relativePath, fileName) },
         ) {
-            structureModel.invalidateAsync()
+            configChanged()
         }
 
         projectModelGate.subscribe(parentDisposable) {
             structureModel.invalidateAsync()
         }
+    }
+
+    private fun buildBanner(): JPanel {
+        val link = HyperlinkLabel()
+        link.setHyperlinkText("Create default set")
+        link.addHyperlinkListener { event ->
+            if (event.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                sets.createDefaultSet()
+                configChanged()
+            }
+        }
+        val panel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        panel.add(JBLabel("No Megatron config sets."))
+        panel.add(link)
+        panel.isVisible = sets.setNames().isEmpty()
+        return panel
+    }
+
+    /** EDT. Re-evaluates the empty-state banner and rebuilds the tree. */
+    private fun configChanged() {
+        banner.isVisible = sets.setNames().isEmpty()
+        structureModel.invalidateAsync()
     }
 
     private fun openSelection() {
