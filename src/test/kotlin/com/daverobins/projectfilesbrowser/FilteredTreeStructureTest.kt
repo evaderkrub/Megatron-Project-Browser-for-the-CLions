@@ -14,7 +14,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         myFixture.addFileToProject("proj/docs/notes.txt", "dir becomes empty, pruned")
 
         val rootDir = requireNotNull(myFixture.findFileInTempDir("proj"))
-        val structure = FilteredTreeStructure(project, rootDir)
+        val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
         val rendered = render(structure.rootElement as FileNode)
 
         assertEquals(
@@ -37,11 +37,35 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         myFixture.addFileToProject("sorted/aa/inner.cpp", "")
 
         val rootDir = requireNotNull(myFixture.findFileInTempDir("sorted"))
-        val structure = FilteredTreeStructure(project, rootDir)
+        val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
         val root = structure.rootElement as FileNode
         val names = root.children.map { (it as FileNode).file.name }
 
         assertEquals(listOf("aa", "zz", "Alpha.cpp", "zeta.cpp"), names)
+    }
+
+    fun testFilterGroupsFromProjectFileDriveVisibility() {
+        myFixture.addFileToProject("gp/megatron.filters", "Docs: *.md\nSources: src/**")
+        myFixture.addFileToProject("gp/readme.md", "shown by Docs")
+        myFixture.addFileToProject("gp/src/main.cpp", "shown by Sources")
+        myFixture.addFileToProject("gp/src/notes.txt", "shown by Sources (src/** matches everything under src)")
+        myFixture.addFileToProject("gp/other/tool.cpp", "hidden: matches no group, and fallback is OFF because groups exist")
+
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("gp"))
+        val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
+        val rendered = render(structure.rootElement as FileNode)
+
+        assertEquals(
+            """
+            gp
+              src
+                main.cpp
+                notes.txt
+              readme.md
+
+            """.trimIndent(),
+            rendered,
+        )
     }
 
     private fun render(node: FileNode, indent: String = ""): String {

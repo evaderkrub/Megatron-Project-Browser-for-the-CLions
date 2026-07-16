@@ -7,9 +7,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.treeStructure.SimpleNode
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 
-/** Tree of project files filtered through [FileFilter], rooted at [rootDir]. */
-class FilteredTreeStructure(project: Project, rootDir: VirtualFile) : SimpleTreeStructure() {
-    private val root = FileNode(project, null, rootDir)
+/** Tree of project files filtered through [FilterEngine], rooted at [rootDir]. */
+class FilteredTreeStructure(
+    project: Project,
+    rootDir: VirtualFile,
+    engine: FilterEngine,
+) : SimpleTreeStructure() {
+    private val root = FileNode(project, null, rootDir, engine, rootDir.path)
     override fun getRootElement(): Any = root
 }
 
@@ -17,6 +21,8 @@ class FileNode(
     private val project: Project,
     parent: FileNode?,
     val file: VirtualFile,
+    private val engine: FilterEngine,
+    private val rootPath: String,
 ) : SimpleNode(project, parent) {
 
     override fun getChildren(): Array<SimpleNode> {
@@ -25,7 +31,7 @@ class FileNode(
             .filter { it.isValid && isVisible(it) }
             .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         if (visible.isEmpty()) return NO_CHILDREN
-        return visible.map { FileNode(project, this, it) }.toTypedArray()
+        return visible.map { FileNode(project, this, it, engine, rootPath) }.toTypedArray()
     }
 
     override fun update(presentation: PresentationData) {
@@ -38,13 +44,17 @@ class FileNode(
 
     override fun getEqualityObjects(): Array<Any> = arrayOf(file)
 
-    companion object {
-        private fun isVisible(file: VirtualFile): Boolean =
-            if (file.isDirectory) FileFilter.includeDirectory(file.name) && hasVisibleContent(file)
-            else FileFilter.includeFile(file.name)
+    private fun isVisible(candidate: VirtualFile): Boolean =
+        if (candidate.isDirectory) {
+            FileFilter.includeDirectory(candidate.name) && hasVisibleContent(candidate)
+        } else {
+            engine.isFileVisible(relativePath(candidate), candidate.name)
+        }
 
-        /** A directory is shown only if filtering leaves something inside it. */
-        private fun hasVisibleContent(dir: VirtualFile): Boolean =
-            (dir.children ?: return false).any { it.isValid && isVisible(it) }
-    }
+    /** A directory is shown only if filtering leaves something inside it. */
+    private fun hasVisibleContent(dir: VirtualFile): Boolean =
+        (dir.children ?: return false).any { it.isValid && isVisible(it) }
+
+    private fun relativePath(candidate: VirtualFile): String =
+        candidate.path.removePrefix("$rootPath/")
 }

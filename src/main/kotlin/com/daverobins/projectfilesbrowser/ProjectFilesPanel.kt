@@ -27,8 +27,9 @@ class ProjectFilesPanel(
     parentDisposable: Disposable,
 ) : SimpleToolWindowPanel(true, true) {
 
+    private val engine = FilterEngine(project, rootDir)
     private val structureModel =
-        StructureTreeModel(FilteredTreeStructure(project, rootDir), parentDisposable)
+        StructureTreeModel(FilteredTreeStructure(project, rootDir, engine), parentDisposable)
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
 
     init {
