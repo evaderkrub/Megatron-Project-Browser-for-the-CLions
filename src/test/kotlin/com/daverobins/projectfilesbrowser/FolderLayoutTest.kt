@@ -278,4 +278,35 @@ class FolderLayoutTest {
         val text = "Core/\n  src/a.cpp\nCore/Math/\n  v.h\nPlatform/\n"
         assertEquals(text, parseFoldersFile(text).serialize())
     }
+
+    @Test
+    fun `header comments round-trip through serialize`() {
+        val text = "# Megatron folders\n# docs here\n\nCore/\n  a.cpp\n"
+        val layout = parseFoldersFile(text)
+        assertEquals(listOf("# Megatron folders", "# docs here"), layout.header)
+        assertEquals("# Megatron folders\n# docs here\n\nCore/\n  a.cpp\n", layout.serialize())
+        assertEquals(layout.serialize(), parseFoldersFile(layout.serialize()).serialize())
+    }
+
+    @Test
+    fun `header-only file is a serialize fixed point`() {
+        val text = "# just docs\n# nothing else\n"
+        assertEquals(text, parseFoldersFile(text).serialize())
+    }
+
+    @Test
+    fun `mutations preserve the header`() {
+        val layout = parseFoldersFile("# docs\nA/\n  a.cpp\n")
+            .withFolder("B").withAssignment("x.cpp", "B").withUnassigned("a.cpp")
+            .withFolderRenamed("B", "C").withFolderDeleted("A")
+        assertEquals(listOf("# docs"), layout.header)
+        assertTrue(layout.serialize().startsWith("# docs\n"))
+    }
+
+    @Test
+    fun `interior comments are still dropped and header trailing blanks trimmed`() {
+        val layout = parseFoldersFile("# top\n\n\nA/\n# interior comment\n  a.cpp\n")
+        assertEquals(listOf("# top"), layout.header)
+        assertEquals("# top\n\nA/\n  a.cpp\n", layout.serialize())
+    }
 }

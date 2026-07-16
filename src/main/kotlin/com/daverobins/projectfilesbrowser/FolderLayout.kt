@@ -31,6 +31,7 @@ class FolderLayout(
     folders: List<String> = emptyList(),
     assignments: List<FileAssignment> = emptyList(),
     rules: List<FolderRule> = emptyList(),
+    header: List<String> = emptyList(),
 ) {
 
     /** Canonical folder paths (parents auto-created), first-declared casing, declaration order. */
@@ -38,6 +39,9 @@ class FolderLayout(
 
     /** Pattern and exclusion lines in declaration order (order = pattern precedence). */
     val rules: List<FolderRule>
+
+    /** Leading comment/blank lines of the file, preserved across UI rewrites. */
+    val header: List<String>
 
     private val byFile: Map<String, FileAssignment> // key: lowercase normalized relative path
 
@@ -79,6 +83,7 @@ class FolderLayout(
         this.folders = canonical.values.toList()
         this.rules = normalizedRules
         this.byFile = files
+        this.header = header.map { it.trim() }.dropLastWhile { it.isEmpty() }
     }
 
     /** Full precedence: explicit entry, else rule resolution. */
@@ -116,7 +121,7 @@ class FolderLayout(
     fun hasFolder(path: String): Boolean = folders.any { it.equals(path, ignoreCase = true) }
 
     fun withFolder(path: String): FolderLayout =
-        FolderLayout(folders + path, byFile.values.toList(), rules)
+        FolderLayout(folders + path, byFile.values.toList(), rules, header)
 
     /** Assigns explicitly; also removes exact-path exclusions that pinned this file out. */
     fun withAssignment(relativePath: String, folder: String): FolderLayout {
@@ -124,7 +129,7 @@ class FolderLayout(
         val keptRules = rules.filterNot {
             it.isExclusion && it.isExactPath && it.raw.equals(norm, ignoreCase = true)
         }
-        return FolderLayout(folders, byFile.values.toList() + FileAssignment(relativePath, folder), keptRules)
+        return FolderLayout(folders, byFile.values.toList() + FileAssignment(relativePath, folder), keptRules, header)
     }
 
     /**
@@ -140,7 +145,7 @@ class FolderLayout(
         val newRules =
             if (claiming != null) rules + FolderRule(norm, claiming, isExclusion = true)
             else rules
-        return FolderLayout(folders, remaining, newRules)
+        return FolderLayout(folders, remaining, newRules, header)
     }
 
     fun withFolderRenamed(path: String, newName: String): FolderLayout {
@@ -150,6 +155,7 @@ class FolderLayout(
             folders.map { remapped(it, path, newPath) },
             byFile.values.map { it.copy(folder = remapped(it.folder, path, newPath)) },
             rules.map { it.copy(folder = remapped(it.folder, path, newPath)) },
+            header,
         )
     }
 
@@ -158,11 +164,14 @@ class FolderLayout(
             folders.filterNot { inSubtree(it, path) },
             byFile.values.filterNot { inSubtree(it.folder, path) },
             rules.filterNot { inSubtree(it.folder, path) },
+            header,
         )
 
     /** Folders in declaration order; rules (declaration order) then sorted explicit files per block. */
     fun serialize(): String {
         val sb = StringBuilder()
+        for (line in header) sb.append(line).append('\n')
+        if (header.isNotEmpty() && folders.isNotEmpty()) sb.append('\n')
         for (folder in folders) {
             sb.append(folder).append("/\n")
             for (rule in rulesIn(folder)) {
@@ -200,11 +209,22 @@ class FolderLayout(
  * the first folder declaration, and bare `!`) are silently skipped.
  */
 fun parseFoldersFile(text: String): FolderLayout {
+    val allLines = text.lines()
+    val header = ArrayList<String>()
+    var start = 0
+    while (start < allLines.size) {
+        val t = allLines[start].trim()
+        if (t.isEmpty() || t.startsWith("#")) {
+            header.add(t)
+            start++
+        } else break
+    }
+
     val folders = ArrayList<String>()
     val assignments = ArrayList<FileAssignment>()
     val rules = ArrayList<FolderRule>()
     var currentFolder: String? = null
-    for (raw in text.lineSequence()) {
+    for (raw in allLines.subList(start, allLines.size)) {
         val line = raw.trim()
         if (line.isEmpty() || line.startsWith("#")) continue
         val normalized = line.replace('\\', '/')
@@ -232,7 +252,7 @@ fun parseFoldersFile(text: String): FolderLayout {
             }
         }
     }
-    return FolderLayout(folders, assignments, rules)
+    return FolderLayout(folders, assignments, rules, header)
 }
 
 /** Returns an error message, or null when [name] (after trimming) is a valid new sibling name. */
