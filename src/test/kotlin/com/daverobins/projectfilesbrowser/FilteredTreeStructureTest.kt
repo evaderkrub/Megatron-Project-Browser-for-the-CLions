@@ -75,6 +75,8 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         myFixture.addFileToProject("fl/zeta.cpp", "")
         myFixture.addFileToProject("fl/readme.md", "hidden by built-in defaults")
         myFixture.addFileToProject("fl/cmake-build-debug/x.cpp", "excluded dir, never traversed")
+        myFixture.addFileToProject("fl/util/common.h", "")
+        myFixture.addFileToProject("fl/src/common.h", "")
 
         val state = MegatronFilterState.getInstance(project)
         state.setFlatMode(true)
@@ -84,8 +86,13 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             val root = structure.rootElement as FileNode
 
             assertEquals(
-                listOf("alpha.cpp", "beta.h", "CMakeLists.txt", "zeta.cpp"),
+                listOf("alpha.cpp", "beta.h", "CMakeLists.txt", "common.h", "common.h", "zeta.cpp"),
                 root.children.map { (it as FileNode).file.name },
+            )
+            val commons = root.children.map { it as FileNode }.filter { it.file.name == "common.h" }
+            assertEquals(
+                listOf("src/common.h", "util/common.h"),
+                commons.map { it.file.path.removePrefix(rootDir.path + "/") },
             )
             assertTrue("flat rows must be leaves", root.children.all { it.children.isEmpty() })
         } finally {
@@ -96,6 +103,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
     fun testFlatLeafLocationStrings() {
         myFixture.addFileToProject("loc/src/main.cpp", "")
         myFixture.addFileToProject("loc/top.cpp", "")
+        myFixture.addFileToProject("loc/src/deep/inner.cpp", "")
 
         val state = MegatronFilterState.getInstance(project)
         state.setFlatMode(true)
@@ -112,6 +120,10 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             val top = nodes.first { it.file.name == "top.cpp" }
             top.update()
             assertNull(top.presentation.locationString)
+
+            val inner = nodes.first { it.file.name == "inner.cpp" }
+            inner.update()
+            assertEquals("src/deep", inner.presentation.locationString)
         } finally {
             state.setFlatMode(false)
         }
