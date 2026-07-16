@@ -3,8 +3,8 @@
     <name>Megatron Project Browser</name>
     <vendor email="daverobins@intrepidcs.com">Dave Robins</vendor>
     <description><![CDATA[
-        Written in Detroit, this project browser for the CLions. Not as amazing
-        as the player Calvin but it aspires to be.
+        Written in Detroit, this is a project browser for the CLions. Not as
+        amazing as the player Calvin, but it aspires to be.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.clion</depends>

@@ -5,3 +5,4 @@ build/
 *.iml
 .kotlin/
 test_output.log
+assets/MegatronJohnson.webp
