@@ -62,4 +62,28 @@ class MegatronFilterStateTest {
         state.setFlatMode(false)
         assertTrue(snapshot.flatMode) // snapshot is a copy, unaffected by later changes
     }
+
+    @Test
+    fun cmakeGateDefaultsToFalse() {
+        assertFalse(MegatronFilterState().isCmakeGateEnabled())
+    }
+
+    @Test
+    fun cmakeGateRoundTrips() {
+        val state = MegatronFilterState()
+        state.setCmakeGateEnabled(true)
+        assertTrue(state.isCmakeGateEnabled())
+        state.setCmakeGateEnabled(false)
+        assertFalse(state.isCmakeGateEnabled())
+    }
+
+    @Test
+    fun getStateCopiesCmakeGate() {
+        val state = MegatronFilterState()
+        state.setCmakeGateEnabled(true)
+        val snapshot = state.state
+        assertTrue(snapshot.cmakeGateEnabled)
+        state.setCmakeGateEnabled(false)
+        assertTrue(snapshot.cmakeGateEnabled)
+    }
 }
