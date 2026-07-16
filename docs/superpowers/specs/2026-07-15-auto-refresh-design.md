@@ -20,11 +20,13 @@ churn inside excluded directories (`cmake-build-*`, `.git`, ...) causes none.
   2. No path segment strictly between the root and the leaf fails
      `FileFilter.includeDirectory` — so events inside excluded dirs are ignored,
      including build churn in `cmake-build-*`.
-  3. The leaf is a directory (creation/deletion/move of dirs can change visibility),
-     OR the leaf name passes `FileFilter.includeFile`.
+  3. The leaf qualifies: a directory leaf must pass `FileFilter.includeDirectory`
+     (creating/deleting `cmake-build-debug` itself changes nothing visible); a file
+     leaf must pass `FileFilter.includeFile`.
   - Rename events (VFS property-change of `name`) are relevant if the OLD or NEW
-    name qualifies under rule 3. Move events are relevant if the old or new path
-    qualifies under rules 1-3.
+    path qualifies under rules 1-3. Move events likewise (old or new path).
+  - Content-change events are never relevant: the tree displays structure and
+    names only, so edits to file contents cannot change it.
 - The manual refresh button stays unchanged (it additionally forces a recursive VFS
   rescan, which catches changes the OS file watcher missed — network drives etc.).
 - No settings/toggle for auto-refresh (YAGNI; revisit if it ever misbehaves).
