@@ -6,7 +6,7 @@
 
 **Architecture:** Custom tool window built on the modern IntelliJ Platform tree stack: `SimpleTreeStructure` (subclass of `AbstractTreeStructure`) → `StructureTreeModel` → `AsyncTreeModel` → `Tree`. Filtering logic lives in a pure-Kotlin `FileFilter` object; the tree structure walks the VFS through it. Scanning happens on background threads courtesy of the tree models.
 
-**Tech Stack:** Kotlin 2.1.0, Gradle 8.13 (wrapper), IntelliJ Platform Gradle Plugin 2.2.1, JDK 21 (Temurin), target CLion 2026.1.1.
+**Tech Stack:** Kotlin 2.3.0, Gradle 8.13 (wrapper), IntelliJ Platform Gradle Plugin 2.2.1, JDK 21 (Temurin), target CLion 2026.1.1. (Plan originally pinned Kotlin 2.1.0; CLion 2026.1.1 platform jars carry Kotlin 2.3.0 metadata, which a 2.1.0 compiler cannot read — verified by compile failure on 2026-07-15. 2.3.0 is forced.)
 
 ## Global Constraints
 
@@ -127,7 +127,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java")
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.3.0"
     id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
