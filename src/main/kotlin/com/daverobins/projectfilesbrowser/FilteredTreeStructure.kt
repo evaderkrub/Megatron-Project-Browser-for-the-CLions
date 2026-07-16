@@ -12,36 +12,49 @@ class FilteredTreeStructure(
     project: Project,
     rootDir: VirtualFile,
     engine: FilterEngine,
+    store: FolderLayoutStore? = null,
 ) : SimpleTreeStructure() {
-    private val root = FileNode(project, null, rootDir, engine, rootDir.path)
+    private val root = FileNode(project, null, rootDir, engine, rootDir.path, store = store)
     override fun getRootElement(): Any = root
 }
 
 class FileNode(
     private val project: Project,
-    parent: FileNode?,
+    parent: SimpleNode?,
     val file: VirtualFile,
     private val engine: FilterEngine,
     private val rootPath: String,
     private val flatLeaf: Boolean = false,
+    private val store: FolderLayoutStore? = null,
+    private val displayName: String? = null,
+    private val excludedFiles: Set<String> = emptySet(),
 ) : SimpleNode(project, parent) {
 
     private val isRootNode = parent == null
 
+    /** True for the pinned `<Unassigned>` bucket shown in folder view. */
+    val isUnassignedBucket: Boolean get() = displayName == UNASSIGNED_LABEL
+
     override fun getChildren(): Array<SimpleNode> {
         if (!file.isDirectory) return NO_CHILDREN
-        if (isRootNode && MegatronFilterState.getInstance(project).getViewMode() == ViewMode.FLAT) {
-            return flatChildren()
+        if (isRootNode) {
+            when (MegatronFilterState.getInstance(project).getViewMode()) {
+                ViewMode.FLAT -> return flatChildren()
+                ViewMode.FOLDERS -> return folderChildren()
+                ViewMode.TREE -> {}
+            }
         }
         val visible = (file.children ?: return NO_CHILDREN)
             .filter { it.isValid && isVisible(it) }
             .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
         if (visible.isEmpty()) return NO_CHILDREN
-        return visible.map { FileNode(project, this, it, engine, rootPath) }.toTypedArray()
+        return visible
+            .map { FileNode(project, this, it, engine, rootPath, excludedFiles = excludedFiles) }
+            .toTypedArray()
     }
 
     override fun update(presentation: PresentationData) {
-        presentation.presentableText = file.name
+        presentation.presentableText = displayName ?: file.name
         if (flatLeaf) {
             val parentRel = relativePath(file).substringBeforeLast('/', "")
             if (parentRel.isNotEmpty()) presentation.locationString = parentRel
@@ -52,7 +65,25 @@ class FileNode(
         )
     }
 
-    override fun getEqualityObjects(): Array<Any> = arrayOf(file)
+    override fun getEqualityObjects(): Array<Any> =
+        if (displayName != null) arrayOf(file, displayName) else arrayOf(file)
+
+    /** Folder view root: the user's virtual folders, then the `<Unassigned>` bucket. */
+    private fun folderChildren(): Array<SimpleNode> {
+        val activeStore = store
+        val layout = activeStore?.layout() ?: FolderLayout()
+        val folderNodes: List<SimpleNode> =
+            if (activeStore == null) emptyList()
+            else layout.childFolders("").map {
+                VirtualFolderNode(project, this, it, activeStore, engine, file, rootPath)
+            }
+        val unassigned = FileNode(
+            project, this, file, engine, rootPath,
+            displayName = UNASSIGNED_LABEL,
+            excludedFiles = layout.assignedFilesLowercase(),
+        )
+        return (folderNodes + unassigned).toTypedArray()
+    }
 
     private fun flatChildren(): Array<SimpleNode> {
         val files = ArrayList<VirtualFile>()
@@ -77,7 +108,7 @@ class FileNode(
         if (candidate.isDirectory) {
             FileFilter.includeDirectory(candidate.name) && hasVisibleContent(candidate)
         } else {
-            engine.isFileVisible(candidate)
+            relativePath(candidate).lowercase() !in excludedFiles && engine.isFileVisible(candidate)
         }
 
     /** A directory is shown only if filtering leaves something inside it. */
@@ -86,4 +117,8 @@ class FileNode(
 
     private fun relativePath(candidate: VirtualFile): String =
         candidate.path.removePrefix("$rootPath/")
+
+    companion object {
+        const val UNASSIGNED_LABEL = "<Unassigned>"
+    }
 }

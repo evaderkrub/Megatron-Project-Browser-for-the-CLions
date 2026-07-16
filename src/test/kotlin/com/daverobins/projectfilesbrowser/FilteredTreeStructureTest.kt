@@ -1,6 +1,7 @@
 package com.daverobins.projectfilesbrowser
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.treeStructure.SimpleNode
 
 class FilteredTreeStructureTest : BasePlatformTestCase() {
 
@@ -158,10 +159,163 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         }
     }
 
+    fun testFolderViewShowsFoldersThenUnassigned() {
+        myFixture.addFileToProject(
+            "fv/megatron.folders",
+            "Platform/\n  win.cpp\nCore/\n  src/engine.cpp\n  src/engine.h\nEmpty/\n",
+        )
+        myFixture.addFileToProject("fv/src/engine.cpp", "")
+        myFixture.addFileToProject("fv/src/engine.h", "")
+        myFixture.addFileToProject("fv/src/misc.cpp", "")
+        myFixture.addFileToProject("fv/win.cpp", "")
+        myFixture.addFileToProject("fv/CMakeLists.txt", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("fv"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                fv
+                  Core
+                    engine.cpp
+                    engine.h
+                  Empty
+                  Platform
+                    win.cpp
+                  <Unassigned>
+                    src
+                      misc.cpp
+                    CMakeLists.txt
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewNestsSubfolders() {
+        myFixture.addFileToProject("fn/megatron.folders", "Core/\nCore/Math/\n  v.h\n")
+        myFixture.addFileToProject("fn/v.h", "")
+        myFixture.addFileToProject("fn/main.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("fn"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                fn
+                  Core
+                    Math
+                      v.h
+                  <Unassigned>
+                    main.cpp
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewAppliesFiltersInsideFoldersAndSkipsMissingFiles() {
+        myFixture.addFileToProject("ff/megatron.filters", "Sources: *.cpp")
+        myFixture.addFileToProject(
+            "ff/megatron.folders",
+            "Core/\n  a.cpp\n  notes.md\n  gone.cpp\n",
+        )
+        myFixture.addFileToProject("ff/a.cpp", "")
+        myFixture.addFileToProject("ff/notes.md", "hidden by Sources group")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("ff"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                ff
+                  Core
+                    a.cpp
+                  <Unassigned>
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewResolvesAssignmentsCaseInsensitively() {
+        myFixture.addFileToProject("fc/megatron.folders", "Core/\n  SRC/Engine.CPP\n")
+        myFixture.addFileToProject("fc/src/engine.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("fc"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            assertEquals(
+                """
+                fc
+                  Core
+                    engine.cpp
+                  <Unassigned>
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
+    fun testFolderViewWithoutStoreOrFileShowsPlainTreeUnderUnassigned() {
+        myFixture.addFileToProject("fp/main.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("fp"))
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
+            assertEquals(
+                """
+                fp
+                  <Unassigned>
+                    main.cpp
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
     private fun render(node: FileNode, indent: String = ""): String {
         val sb = StringBuilder().append(indent).append(node.file.name).append('\n')
         for (child in node.children) {
             sb.append(render(child as FileNode, "$indent  "))
+        }
+        return sb.toString()
+    }
+
+    private fun renderNode(node: SimpleNode, indent: String = ""): String {
+        node.update()
+        val sb = StringBuilder().append(indent).append(node.presentation.presentableText).append('\n')
+        for (child in node.children) {
+            sb.append(renderNode(child, "$indent  "))
         }
         return sb.toString()
     }
