@@ -24,6 +24,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
         var disabledGroups: MutableSet<String> = mutableSetOf()
         var viewMode: ViewMode = ViewMode.TREE
         var cmakeGateEnabled: Boolean = false
+        var activeSet: String = "default"
     }
 
     @Volatile
@@ -35,6 +36,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
             disabledGroups = current.disabledGroups.toMutableSet()
             viewMode = current.viewMode
             cmakeGateEnabled = current.cmakeGateEnabled
+            activeSet = current.activeSet
         }
 
     @Synchronized
@@ -64,6 +66,14 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     @Synchronized
     fun setCmakeGateEnabled(enabled: Boolean) {
         current.cmakeGateEnabled = enabled
+    }
+
+    @Synchronized
+    fun getActiveSet(): String = current.activeSet
+
+    @Synchronized
+    fun setActiveSet(name: String) {
+        current.activeSet = name
     }
 
     companion object {

@@ -84,4 +84,26 @@ class MegatronFilterStateTest {
         state.setCmakeGateEnabled(false)
         assertTrue(snapshot.cmakeGateEnabled)
     }
+
+    @Test
+    fun testActiveSetDefaultsToDefault() {
+        assertEquals("default", MegatronFilterState().getActiveSet())
+    }
+
+    @Test
+    fun testActiveSetRoundTrips() {
+        val state = MegatronFilterState()
+        state.setActiveSet("gui-work")
+        val restored = MegatronFilterState()
+        restored.loadState(state.state)
+        assertEquals("gui-work", restored.getActiveSet())
+    }
+
+    @Test
+    fun testGetStateReturnsDefensiveCopyOfActiveSet() {
+        val state = MegatronFilterState()
+        val snapshot = state.state
+        state.setActiveSet("other")
+        assertEquals("default", snapshot.activeSet)
+    }
 }
