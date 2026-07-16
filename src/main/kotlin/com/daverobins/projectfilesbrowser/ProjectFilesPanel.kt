@@ -15,10 +15,12 @@ import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.SingleAlarm
 import com.intellij.util.ui.tree.TreeUtil
 import java.awt.BorderLayout
 import java.awt.FlowLayout
@@ -28,6 +30,8 @@ import javax.swing.DropMode
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.KeyStroke
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 import javax.swing.event.HyperlinkEvent
 
 class ProjectFilesPanel(
@@ -44,6 +48,7 @@ class ProjectFilesPanel(
         StructureTreeModel(FilteredTreeStructure(project, rootDir, engine, folderStore), parentDisposable)
     private val tree = Tree(AsyncTreeModel(structureModel, parentDisposable))
     private val banner: JPanel = buildBanner()
+    private val quickFilterField = SearchTextField(false)
 
     init {
         tree.isRootVisible = true
@@ -79,7 +84,24 @@ class ProjectFilesPanel(
             true,
         )
         toolbar.targetComponent = tree
-        setToolbar(toolbar.component)
+        quickFilterField.textEditor.emptyText.text = "Filter results…"
+        val quickFilterAlarm = SingleAlarm(
+            Runnable {
+                engine.setQuickFilter(quickFilterField.text)
+                structureModel.invalidateAsync()
+            },
+            QUICK_FILTER_DEBOUNCE_MS,
+            parentDisposable,
+        )
+        quickFilterField.addDocumentListener(object : DocumentListener {
+            override fun insertUpdate(e: DocumentEvent) = quickFilterAlarm.cancelAndRequest()
+            override fun removeUpdate(e: DocumentEvent) = quickFilterAlarm.cancelAndRequest()
+            override fun changedUpdate(e: DocumentEvent) = quickFilterAlarm.cancelAndRequest()
+        })
+        val header = JPanel(BorderLayout())
+        header.add(toolbar.component, BorderLayout.WEST)
+        header.add(quickFilterField, BorderLayout.CENTER)
+        setToolbar(header)
         val content = JPanel(BorderLayout())
         content.add(banner, BorderLayout.NORTH)
         content.add(ScrollPaneFactory.createScrollPane(tree), BorderLayout.CENTER)
@@ -151,5 +173,9 @@ class ProjectFilesPanel(
         val editors = FileEditorManager.getInstance(project)
         if (counterpart != null && counterpart.isValid) editors.openFile(counterpart, false)
         editors.openFile(file, true)
+    }
+
+    companion object {
+        private const val QUICK_FILTER_DEBOUNCE_MS = 300
     }
 }
