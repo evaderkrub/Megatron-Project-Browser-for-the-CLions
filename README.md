@@ -8,7 +8,7 @@ A filtered project-files tool window for [CLion](https://www.jetbrains.com/clion
 
 ## Install
 
-Grab `clionprojectview-<version>.zip` from the releases (or build it yourself, below), then in CLion:
+**[⬇ Download the latest release](https://github.com/evaderkrub/Megatron-Project-Browser-for-the-CLions/releases/latest)** — grab the `clionprojectview-<version>.zip` asset (or build it yourself, below), then in CLion:
 
 **Settings → Plugins → ⚙ → Install Plugin from Disk…** → pick the zip → restart.
 
