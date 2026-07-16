@@ -59,6 +59,7 @@ class ProjectFilesPanel(
             DefaultActionGroup(
                 refresh,
                 FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
+                FlatViewToggleAction(project) { structureModel.invalidateAsync() },
             ),
             true,
         )
