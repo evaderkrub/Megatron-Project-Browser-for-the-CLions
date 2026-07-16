@@ -9,6 +9,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.ReadonlyStatusHandler
 import com.intellij.openapi.wm.IdeFocusManager
 
 /**
@@ -42,6 +43,7 @@ class BookmarkAction(
             lineStart = document.textLength
             lineText = ""
         }
+        if (!ReadonlyStatusHandler.ensureDocumentWritable(project, document)) return
         val insertion = bookmarkInsertion(lineText, fileName, sets.effectiveSet())
         WriteCommandAction.runWriteCommandAction(project) {
             document.insertString(lineStart, insertion.lineText + "\n")

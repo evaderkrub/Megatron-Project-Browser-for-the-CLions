@@ -2,6 +2,7 @@ package com.daverobins.projectfilesbrowser
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.projectView.PresentationData
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.treeStructure.SimpleNode
@@ -71,6 +72,7 @@ class FileNode(
         val visible = ArrayList<VirtualFile>()
         collectVisibleFiles(file, visible)
         val found = visible.flatMap { candidate ->
+            ProgressManager.checkCanceled()
             activeScanner.bookmarksIn(candidate)
                 .filter { it.visibleInSet(activeSet) }
                 .map { candidate to it }
