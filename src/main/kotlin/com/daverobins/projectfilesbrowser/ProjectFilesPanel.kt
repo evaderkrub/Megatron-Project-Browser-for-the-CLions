@@ -58,6 +58,10 @@ class ProjectFilesPanel(
         toolbar.targetComponent = tree
         setToolbar(toolbar.component)
         setContent(ScrollPaneFactory.createScrollPane(tree))
+
+        VfsChangeWatcher(project, rootDir, parentDisposable) {
+            structureModel.invalidateAsync()
+        }
     }
 
     private fun openSelection() {
