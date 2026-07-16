@@ -387,6 +387,36 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         }
     }
 
+    fun testCollectFilesUnderWalksFoldersAndDirectoriesWithDedup() {
+        myFixture.addFileToProject("cu/megatron/default.folders", "Core/\n  src/**\nCore/Sub/\n  top.cpp\n")
+        myFixture.addFileToProject("cu/src/a.cpp", "")
+        myFixture.addFileToProject("cu/src/deep/b.h", "")
+        myFixture.addFileToProject("cu/top.cpp", "")
+        myFixture.addFileToProject("cu/other.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("cu"))
+            val store = FolderLayoutStore(project, rootDir)
+            val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir), store)
+            val root = structure.rootElement as FileNode
+            val children = root.children
+
+            val core = children.first { it is VirtualFolderNode && it.folderPath == "Core" }
+            val coreFiles = collectFilesUnder(listOf(core)).map { it.name }.sorted()
+            assertEquals(listOf("a.cpp", "b.h", "top.cpp"), coreFiles) // recursive: Core + Core/Sub
+
+            val unassigned = children.filterIsInstance<FileNode>().first { it.isUnassignedBucket }
+            assertEquals(listOf("other.cpp"), collectFilesUnder(listOf(unassigned)).map { it.name })
+
+            val union = collectFilesUnder(listOf(core, core, unassigned))
+            assertEquals(4, union.size) // dedup across repeated selection
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
     private fun render(node: FileNode, indent: String = ""): String {
         val sb = StringBuilder().append(indent).append(node.file.name).append('\n')
         for (child in node.children) {
