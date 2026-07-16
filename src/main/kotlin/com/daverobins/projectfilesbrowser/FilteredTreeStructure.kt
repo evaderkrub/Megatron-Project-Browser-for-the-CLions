@@ -13,8 +13,11 @@ class FilteredTreeStructure(
     rootDir: VirtualFile,
     engine: FilterEngine,
     store: FolderLayoutStore? = null,
+    scanner: BookmarkScanner? = null,
+    sets: ConfigSetManager? = null,
 ) : SimpleTreeStructure() {
-    private val root = FileNode(project, null, rootDir, engine, rootDir.path, store = store)
+    private val root =
+        FileNode(project, null, rootDir, engine, rootDir.path, store = store, scanner = scanner, sets = sets)
     override fun getRootElement(): Any = root
 }
 
@@ -28,6 +31,8 @@ class FileNode(
     private val store: FolderLayoutStore? = null,
     private val displayName: String? = null,
     private val excludedFiles: Set<String> = emptySet(),
+    private val scanner: BookmarkScanner? = null,
+    private val sets: ConfigSetManager? = null,
 ) : SimpleNode(project, parent) {
 
     private val isRootNode = parent == null
@@ -38,12 +43,18 @@ class FileNode(
     override fun getChildren(): Array<SimpleNode> {
         if (!file.isDirectory) return NO_CHILDREN
         if (isRootNode) {
-            when (MegatronFilterState.getInstance(project).getViewMode()) {
-                ViewMode.FLAT -> return flatChildren()
-                ViewMode.FOLDERS -> return folderChildren()
-                ViewMode.TREE -> {}
+            val main = when (MegatronFilterState.getInstance(project).getViewMode()) {
+                ViewMode.FLAT -> flatChildren()
+                ViewMode.FOLDERS -> folderChildren()
+                ViewMode.TREE -> directoryChildren()
             }
+            return main + bookmarksNode()
         }
+        return directoryChildren()
+    }
+
+    /** The plain filtered directory listing (tree view, and every non-root directory). */
+    private fun directoryChildren(): Array<SimpleNode> {
         val visible = (file.children ?: return NO_CHILDREN)
             .filter { it.isValid && isVisible(it) }
             .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
@@ -51,6 +62,21 @@ class FileNode(
         return visible
             .map { FileNode(project, this, it, engine, rootPath, excludedFiles = excludedFiles) }
             .toTypedArray()
+    }
+
+    /** Root only: the pinned Bookmarks group, absent when nothing survives. */
+    private fun bookmarksNode(): Array<SimpleNode> {
+        val activeScanner = scanner ?: return NO_CHILDREN
+        val activeSet = sets?.effectiveSet() ?: return NO_CHILDREN
+        val visible = ArrayList<VirtualFile>()
+        collectVisibleFiles(file, visible)
+        val found = visible.flatMap { candidate ->
+            activeScanner.bookmarksIn(candidate)
+                .filter { it.visibleInSet(activeSet) }
+                .map { candidate to it }
+        }
+        if (found.isEmpty()) return NO_CHILDREN
+        return arrayOf<SimpleNode>(BookmarksRootNode(project, this, found, rootPath))
     }
 
     override fun update(presentation: PresentationData) {
