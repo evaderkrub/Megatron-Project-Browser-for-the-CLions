@@ -8,6 +8,9 @@ import com.intellij.openapi.components.StoragePathMacros
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 
+/** How the Megatron tree presents files. */
+enum class ViewMode { TREE, FLAT, FOLDERS }
+
 /**
  * Per-project toggle state for filter groups. Stores only the DISABLED group
  * names (in the workspace file, not in megatron.filters), so unknown/new
@@ -19,7 +22,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
 
     class State {
         var disabledGroups: MutableSet<String> = mutableSetOf()
-        var flatMode: Boolean = false
+        var viewMode: ViewMode = ViewMode.TREE
         var cmakeGateEnabled: Boolean = false
     }
 
@@ -30,7 +33,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     override fun getState(): State =
         State().apply {
             disabledGroups = current.disabledGroups.toMutableSet()
-            flatMode = current.flatMode
+            viewMode = current.viewMode
             cmakeGateEnabled = current.cmakeGateEnabled
         }
 
@@ -48,11 +51,11 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     }
 
     @Synchronized
-    fun isFlatMode(): Boolean = current.flatMode
+    fun getViewMode(): ViewMode = current.viewMode
 
     @Synchronized
-    fun setFlatMode(flat: Boolean) {
-        current.flatMode = flat
+    fun setViewMode(mode: ViewMode) {
+        current.viewMode = mode
     }
 
     @Synchronized

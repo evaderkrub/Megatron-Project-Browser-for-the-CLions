@@ -40,27 +40,25 @@ class MegatronFilterStateTest {
     }
 
     @Test
-    fun flatModeDefaultsToFalse() {
-        assertFalse(MegatronFilterState().isFlatMode())
+    fun viewModeDefaultsToTree() {
+        assertEquals(ViewMode.TREE, MegatronFilterState().getViewMode())
     }
 
     @Test
-    fun flatModeRoundTrips() {
+    fun viewModeRoundTrips() {
         val state = MegatronFilterState()
-        state.setFlatMode(true)
-        assertTrue(state.isFlatMode())
-        state.setFlatMode(false)
-        assertFalse(state.isFlatMode())
+        state.setViewMode(ViewMode.FOLDERS)
+        val restored = MegatronFilterState()
+        restored.loadState(state.state)
+        assertEquals(ViewMode.FOLDERS, restored.getViewMode())
     }
 
     @Test
-    fun getStateCopiesFlatMode() {
+    fun getStateReturnsDefensiveCopyOfViewMode() {
         val state = MegatronFilterState()
-        state.setFlatMode(true)
         val snapshot = state.state
-        assertTrue(snapshot.flatMode)
-        state.setFlatMode(false)
-        assertTrue(snapshot.flatMode) // snapshot is a copy, unaffected by later changes
+        state.setViewMode(ViewMode.FLAT)
+        assertEquals(ViewMode.TREE, snapshot.viewMode)
     }
 
     @Test

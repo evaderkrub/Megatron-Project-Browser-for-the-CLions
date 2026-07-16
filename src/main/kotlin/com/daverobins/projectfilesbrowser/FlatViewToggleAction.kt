@@ -15,10 +15,11 @@ class FlatViewToggleAction(
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun isSelected(e: AnActionEvent): Boolean =
-        MegatronFilterState.getInstance(project).isFlatMode()
+        MegatronFilterState.getInstance(project).getViewMode() == ViewMode.FLAT
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
-        MegatronFilterState.getInstance(project).setFlatMode(state)
+        MegatronFilterState.getInstance(project)
+            .setViewMode(if (state) ViewMode.FLAT else ViewMode.TREE)
         onModeChanged()
     }
 }

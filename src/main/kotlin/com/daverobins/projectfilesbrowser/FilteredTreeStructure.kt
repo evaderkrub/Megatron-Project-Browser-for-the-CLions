@@ -30,7 +30,7 @@ class FileNode(
 
     override fun getChildren(): Array<SimpleNode> {
         if (!file.isDirectory) return NO_CHILDREN
-        if (isRootNode && MegatronFilterState.getInstance(project).isFlatMode()) {
+        if (isRootNode && MegatronFilterState.getInstance(project).getViewMode() == ViewMode.FLAT) {
             return flatChildren()
         }
         val visible = (file.children ?: return NO_CHILDREN)

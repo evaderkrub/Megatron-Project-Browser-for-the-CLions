@@ -79,7 +79,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         myFixture.addFileToProject("fl/src/common.h", "")
 
         val state = MegatronFilterState.getInstance(project)
-        state.setFlatMode(true)
+        state.setViewMode(ViewMode.FLAT)
         try {
             val rootDir = requireNotNull(myFixture.findFileInTempDir("fl"))
             val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
@@ -96,7 +96,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             )
             assertTrue("flat rows must be leaves", root.children.all { it.children.isEmpty() })
         } finally {
-            state.setFlatMode(false)
+            state.setViewMode(ViewMode.TREE)
         }
     }
 
@@ -106,7 +106,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         myFixture.addFileToProject("loc/src/deep/inner.cpp", "")
 
         val state = MegatronFilterState.getInstance(project)
-        state.setFlatMode(true)
+        state.setViewMode(ViewMode.FLAT)
         try {
             val rootDir = requireNotNull(myFixture.findFileInTempDir("loc"))
             val structure = FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir))
@@ -125,7 +125,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             inner.update()
             assertEquals("src/deep", inner.presentation.locationString)
         } finally {
-            state.setFlatMode(false)
+            state.setViewMode(ViewMode.TREE)
         }
     }
 
@@ -142,11 +142,11 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             if (node.file.isDirectory) node.children.flatMap { collectFiles(it as FileNode) }.toSet()
             else setOf(node.file.path)
 
-        state.setFlatMode(false)
+        state.setViewMode(ViewMode.TREE)
         val treeSet = collectFiles(
             FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir)).rootElement as FileNode
         )
-        state.setFlatMode(true)
+        state.setViewMode(ViewMode.FLAT)
         try {
             val flatSet = collectFiles(
                 FilteredTreeStructure(project, rootDir, FilterEngine(project, rootDir)).rootElement as FileNode
@@ -154,7 +154,7 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
             assertEquals(treeSet, flatSet)
             assertEquals(2, flatSet.size)
         } finally {
-            state.setFlatMode(false)
+            state.setViewMode(ViewMode.TREE)
         }
     }
 
