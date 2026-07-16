@@ -417,6 +417,68 @@ class FilteredTreeStructureTest : BasePlatformTestCase() {
         }
     }
 
+    fun testQuickFilterNarrowsTreeAndPrunesEmptyDirs() {
+        myFixture.addFileToProject("qf/src/wowz.cpp", "")
+        myFixture.addFileToProject("qf/src/other.cpp", "")
+        myFixture.addFileToProject("qf/lib/misc.cpp", "")
+
+        val rootDir = requireNotNull(myFixture.findFileInTempDir("qf"))
+        val engine = FilterEngine(project, rootDir)
+        engine.setQuickFilter("wow")
+        val structure = FilteredTreeStructure(project, rootDir, engine)
+        assertEquals(
+            """
+            qf
+              src
+                wowz.cpp
+
+            """.trimIndent(),
+            renderNode(structure.rootElement as SimpleNode),
+        )
+
+        engine.setQuickFilter("")
+        assertEquals(
+            """
+            qf
+              lib
+                misc.cpp
+              src
+                other.cpp
+                wowz.cpp
+
+            """.trimIndent(),
+            renderNode(FilteredTreeStructure(project, rootDir, engine).rootElement as SimpleNode),
+        )
+    }
+
+    fun testQuickFilterAppliesInsideFolderView() {
+        myFixture.addFileToProject("qv/megatron/default.folders", "Code/\n  src/**\n")
+        myFixture.addFileToProject("qv/src/wowz.cpp", "")
+        myFixture.addFileToProject("qv/src/other.cpp", "")
+
+        val state = MegatronFilterState.getInstance(project)
+        state.setViewMode(ViewMode.FOLDERS)
+        try {
+            val rootDir = requireNotNull(myFixture.findFileInTempDir("qv"))
+            val store = FolderLayoutStore(project, rootDir)
+            val engine = FilterEngine(project, rootDir)
+            engine.setQuickFilter("wow")
+            val structure = FilteredTreeStructure(project, rootDir, engine, store)
+            assertEquals(
+                """
+                qv
+                  Code
+                    wowz.cpp
+                  <Unassigned>
+
+                """.trimIndent(),
+                renderNode(structure.rootElement as SimpleNode),
+            )
+        } finally {
+            state.setViewMode(ViewMode.TREE)
+        }
+    }
+
     private fun render(node: FileNode, indent: String = ""): String {
         val sb = StringBuilder().append(indent).append(node.file.name).append('\n')
         for (child in node.children) {

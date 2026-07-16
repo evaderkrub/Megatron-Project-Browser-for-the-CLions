@@ -21,13 +21,23 @@ class FilterEngine(
     private var cachedKey: Pair<String, Long>? = null
     private var cachedGroups: List<FilterGroup> = emptyList()
 
+    @Volatile
+    private var quickFilter: QuickFilter? = null
+
+    /** Sets the transient toolbar quick filter; blank text clears it. */
+    fun setQuickFilter(text: String) {
+        quickFilter = QuickFilter.parse(text)
+    }
+
     /** Group/default visibility only — no project-model gating. Used by the VFS watcher. */
     fun isGroupVisible(relativePath: String, fileName: String): Boolean =
         visibleByGroups(enabledGroups(), relativePath, fileName)
 
-    /** Full visibility: group filtering AND (when enabled and active) the project-model gate. */
+    /** Full visibility: group filtering AND the quick filter AND (when enabled and active) the project-model gate. */
     fun isFileVisible(file: VirtualFile): Boolean {
-        if (!isGroupVisible(relativePath(file), file.name)) return false
+        val relativePath = relativePath(file)
+        if (!isGroupVisible(relativePath, file.name)) return false
+        if (quickFilter?.matches(relativePath, file.name) == false) return false
         val activeGate = gate ?: return true
         if (!MegatronFilterState.getInstance(project).isCmakeGateEnabled()) return true
         if (!activeGate.isActive()) return true
