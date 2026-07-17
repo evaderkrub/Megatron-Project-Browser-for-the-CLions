@@ -93,4 +93,54 @@ class BookmarkTest {
         assertEquals('"', insertion.lineText[insertion.caretColumn])
         assertEquals('"', insertion.lineText[insertion.caretColumn - 1])
     }
+
+    @Test
+    fun `change touching the marker word is detected`() {
+        val text = "xx // megatron: \"t\" yy"
+        assertTrue(changeTouchesMarker(text, changeStart = 6, changeLength = 8))
+    }
+
+    @Test
+    fun `single char completing the marker word is detected`() {
+        val text = "// megatron"
+        assertTrue(changeTouchesMarker(text, changeStart = text.length - 1, changeLength = 1))
+    }
+
+    @Test
+    fun `change far from the marker word is not detected`() {
+        val text = "// megatron: \"t\"\n" + "int x = 0;".repeat(10)
+        assertFalse(changeTouchesMarker(text, changeStart = text.length - 5, changeLength = 1))
+    }
+
+    @Test
+    fun `marker detection is case-insensitive`() {
+        val text = "// MEGATRON: \"t\""
+        assertTrue(changeTouchesMarker(text, changeStart = 3, changeLength = 8))
+    }
+
+    @Test
+    fun `deletion adjacent to the marker word is detected`() {
+        val text = "ab megatron"
+        assertTrue(changeTouchesMarker(text, changeStart = text.length, changeLength = 0))
+    }
+
+    @Test
+    fun `edit later on a marker line is detected`() {
+        val text = "int a;\n// megatron: \"a long title\nint b;"
+        val quotePos = text.indexOf("title") + "title".length
+        assertTrue(changeTouchesMarker(text, changeStart = quotePos, changeLength = 1))
+    }
+
+    @Test
+    fun `multi-line change spanning a marker line is detected`() {
+        val text = "int a;\nx// megatron: \"t\"\nint b;"
+        assertTrue(changeTouchesMarker(text, changeStart = 4, changeLength = 10))
+    }
+
+    @Test
+    fun `window clamps at document edges without throwing`() {
+        assertFalse(changeTouchesMarker("", changeStart = 0, changeLength = 0))
+        assertFalse(changeTouchesMarker("meg", changeStart = 0, changeLength = 3))
+        assertTrue(changeTouchesMarker("megatron", changeStart = 0, changeLength = 8))
+    }
 }

@@ -144,7 +144,7 @@ class ProjectFilesPanel(
                     val changed = FileDocumentManager.getInstance().getFile(event.document) ?: return
                     if (!changed.path.startsWith(rootDir.path + "/")) return
                     if (scanner.hadBookmarks(changed.path) ||
-                        event.document.charsSequence.contains(BOOKMARK_MARKER_WORD, ignoreCase = true)
+                        changeTouchesMarker(event.document.charsSequence, event.offset, event.newFragment.length)
                     ) {
                         bookmarkAlarm.cancelAndRequest()
                     }

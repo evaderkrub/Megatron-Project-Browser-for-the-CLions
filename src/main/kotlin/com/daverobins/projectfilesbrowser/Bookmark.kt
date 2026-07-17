@@ -31,6 +31,21 @@ fun parseBookmarks(text: String): List<Bookmark> {
     return result
 }
 
+/**
+ * True when the line(s) spanning the edited region contain the marker word.
+ * Bookmarks are line constructs, so only an edit on a marker's own line can
+ * create one or change whether it parses — this bounds the per-keystroke
+ * check to the current line instead of the whole document.
+ */
+fun changeTouchesMarker(text: CharSequence, changeStart: Int, changeLength: Int): Boolean {
+    val start = changeStart.coerceIn(0, text.length)
+    val end = (start + changeLength).coerceIn(start, text.length)
+    val lineStart = if (start == 0) 0 else text.lastIndexOf('\n', start - 1) + 1
+    val lineEnd = text.indexOf('\n', end).let { if (it < 0) text.length else it }
+    if (lineEnd - lineStart < BOOKMARK_MARKER_WORD.length) return false
+    return text.subSequence(lineStart, lineEnd).contains(BOOKMARK_MARKER_WORD, ignoreCase = true)
+}
+
 /** Text and caret column for a new bookmark line inserted above the caret line. */
 data class BookmarkInsertion(val lineText: String, val caretColumn: Int)
 
