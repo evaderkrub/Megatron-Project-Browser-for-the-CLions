@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.daverobins"
-version = "0.10.1"
+version = "0.10.2"
 
 repositories {
     mavenCentral()

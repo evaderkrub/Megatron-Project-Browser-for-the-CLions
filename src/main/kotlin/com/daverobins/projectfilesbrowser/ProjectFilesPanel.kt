@@ -77,7 +77,7 @@ class ProjectFilesPanel(
             DefaultActionGroup(
                 BookmarkAction(project, sets),
                 SetSwitcherAction(project, sets) { configChanged() },
-                FilterDropdownAction(project, engine) { structureModel.invalidateAsync() },
+                FilterDropdownAction(project, engine, sets) { structureModel.invalidateAsync() },
                 FlatViewToggleAction(project) { structureModel.invalidateAsync() },
                 FolderViewToggleAction(project) { structureModel.invalidateAsync() },
             ),
