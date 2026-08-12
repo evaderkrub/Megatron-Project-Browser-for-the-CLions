@@ -29,7 +29,7 @@ class FilterDropdownAction(
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
-        val head = arrayOf<AnAction>(CmakeGateToggleAction(), Separator.getInstance())
+        val head = arrayOf<AnAction>(CmakeGateToggleAction(), BookmarksToggleAction(), Separator.getInstance())
         val groups = engine.groupsForUi()
         val tail: Array<AnAction> =
             if (groups.isEmpty()) arrayOf(NoFiltersInfoAction())
@@ -60,6 +60,23 @@ class FilterDropdownAction(
 
         override fun setSelected(e: AnActionEvent, state: Boolean) {
             MegatronFilterState.getInstance(project).setCmakeGateEnabled(state)
+            onFilterChanged()
+        }
+    }
+
+    private inner class BookmarksToggleAction :
+        ToggleAction(
+            "Comment Bookmarks",
+            "Scan files for megatron bookmark comments and show them in the tree",
+            null,
+        ) {
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+        override fun isSelected(e: AnActionEvent): Boolean =
+            MegatronFilterState.getInstance(project).isBookmarksEnabled()
+
+        override fun setSelected(e: AnActionEvent, state: Boolean) {
+            MegatronFilterState.getInstance(project).setBookmarksEnabled(state)
             onFilterChanged()
         }
     }

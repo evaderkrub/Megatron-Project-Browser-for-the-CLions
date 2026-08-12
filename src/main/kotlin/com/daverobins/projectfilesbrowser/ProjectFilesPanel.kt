@@ -133,19 +133,31 @@ class ProjectFilesPanel(
             structureModel.invalidateAsync()
         }
 
+        // Files touched since the last bookmark rescan. Both the document
+        // listener and the alarm run on the EDT, so no synchronization needed.
+        val pendingBookmarkFiles = LinkedHashSet<VirtualFile>()
         val bookmarkAlarm = SingleAlarm(
-            Runnable { structureModel.invalidateAsync() },
-            QUICK_FILTER_DEBOUNCE_MS,
+            Runnable {
+                val files = pendingBookmarkFiles.toList()
+                pendingBookmarkFiles.clear()
+                // Rebuild the tree only when a rescan shows the bookmarks
+                // actually changed — ordinary edits in bookmarked files no
+                // longer trigger project-wide rebuilds.
+                if (files.count { scanner.refresh(it) } > 0) structureModel.invalidateAsync()
+            },
+            BOOKMARK_RESCAN_DEBOUNCE_MS,
             parentDisposable,
         )
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(
             object : EditorDocumentListener {
                 override fun documentChanged(event: EditorDocumentEvent) {
+                    if (!MegatronFilterState.getInstance(project).isBookmarksEnabled()) return
                     val changed = FileDocumentManager.getInstance().getFile(event.document) ?: return
                     if (!changed.path.startsWith(rootDir.path + "/")) return
                     if (scanner.hadBookmarks(changed.path) ||
                         changeTouchesMarker(event.document.charsSequence, event.offset, event.newFragment.length)
                     ) {
+                        pendingBookmarkFiles.add(changed)
                         bookmarkAlarm.cancelAndRequest()
                     }
                 }
@@ -213,5 +225,6 @@ class ProjectFilesPanel(
 
     companion object {
         private const val QUICK_FILTER_DEBOUNCE_MS = 300
+        private const val BOOKMARK_RESCAN_DEBOUNCE_MS = 1000
     }
 }

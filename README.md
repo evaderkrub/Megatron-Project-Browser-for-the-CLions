@@ -45,6 +45,8 @@ A bookmark is a plain comment in your code:
 
 All bookmarks in filter-visible files appear under a **Bookmarks** node pinned at the bottom of the tree (hidden when there are none), titled by the quoted text with a grey `path:line`. Double-click or Enter jumps to the line. To delete or edit a bookmark, edit the comment. Bookmarks in files hidden by the current filters (or quick filter, or CMake gate) don't appear.
 
+The whole feature can be switched off with the **Comment Bookmarks** toggle in the funnel dropdown: the Bookmarks node disappears, file scanning stops, and the 🔖 button is disabled.
+
 ## Right-click menu
 
 On **files**:

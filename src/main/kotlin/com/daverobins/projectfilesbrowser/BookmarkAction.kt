@@ -25,7 +25,8 @@ class BookmarkAction(
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = FileEditorManager.getInstance(project).selectedTextEditor != null
+        e.presentation.isEnabled = MegatronFilterState.getInstance(project).isBookmarksEnabled() &&
+            FileEditorManager.getInstance(project).selectedTextEditor != null
     }
 
     override fun actionPerformed(e: AnActionEvent) {

@@ -24,6 +24,9 @@ private val MARKER = Regex(
 fun parseBookmarks(text: String): List<Bookmark> {
     val result = ArrayList<Bookmark>()
     text.lineSequence().forEachIndexed { index, line ->
+        // Cheap substring check first: almost every line lacks the marker word,
+        // so the regex only runs on candidate lines.
+        if (!line.contains(BOOKMARK_MARKER_WORD, ignoreCase = true)) return@forEachIndexed
         val match = MARKER.find(line) ?: return@forEachIndexed
         val set = match.groupValues[1].trim().takeIf { it.isNotEmpty() }
         result.add(Bookmark(index, set, match.groupValues[2]))

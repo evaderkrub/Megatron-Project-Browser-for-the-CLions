@@ -67,6 +67,7 @@ class FileNode(
 
     /** Root only: the pinned Bookmarks group, absent when nothing survives. */
     private fun bookmarksNode(): Array<SimpleNode> {
+        if (!MegatronFilterState.getInstance(project).isBookmarksEnabled()) return NO_CHILDREN
         val activeScanner = scanner ?: return NO_CHILDREN
         val activeSet = sets?.effectiveSet() ?: return NO_CHILDREN
         val visible = ArrayList<VirtualFile>()

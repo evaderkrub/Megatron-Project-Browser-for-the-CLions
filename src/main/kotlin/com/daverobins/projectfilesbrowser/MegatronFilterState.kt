@@ -25,6 +25,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
         var viewMode: ViewMode = ViewMode.TREE
         var cmakeGateEnabled: Boolean = false
         var activeSet: String = "default"
+        var bookmarksEnabled: Boolean = true
     }
 
     @Volatile
@@ -37,6 +38,7 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
             viewMode = current.viewMode
             cmakeGateEnabled = current.cmakeGateEnabled
             activeSet = current.activeSet
+            bookmarksEnabled = current.bookmarksEnabled
         }
 
     @Synchronized
@@ -66,6 +68,14 @@ class MegatronFilterState : PersistentStateComponent<MegatronFilterState.State> 
     @Synchronized
     fun setCmakeGateEnabled(enabled: Boolean) {
         current.cmakeGateEnabled = enabled
+    }
+
+    @Synchronized
+    fun isBookmarksEnabled(): Boolean = current.bookmarksEnabled
+
+    @Synchronized
+    fun setBookmarksEnabled(enabled: Boolean) {
+        current.bookmarksEnabled = enabled
     }
 
     @Synchronized
